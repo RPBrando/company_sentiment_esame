@@ -3,8 +3,6 @@ from fastapi.responses import HTMLResponse
 import schema
 import model
 
-pipeline = model.Model.sentiment_pipeline # Import del modello nella pipeline
-
 app = FastAPI() # creazione API
 
 @app.get("/", response_class=HTMLResponse) # prova del get
@@ -25,13 +23,12 @@ async def root():
             </html>
             """
 
-@app.post("/prediction") # prova del post
-async def predicton(predict: schema.Prediction):
-        with open("file.csv", "w") as file:
-                data = file
-
-        data.append(predict)
-
+@app.post("/predict") # prova del post
+async def predicton(text: schema.Sentiment):
+        testo = text.sentiment
+        predict = model.prediction(testo)
+        print(predict)
+        return predict
 
 if __name__ == "__main__":
         import uvicorn

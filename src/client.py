@@ -1,13 +1,14 @@
 import requests
 
-url = ""
+url = "http://127.0.0.1:8000/predict"
 
-data = "shit company"
+data = {
+    "sentiment" : "shit company"
+}
 
 response = requests.post(url=url , json=data)
 
-if response == 200:
-    print(response)
+if response.status_code == 200:
+    print(response.text)
 else:
     print(f"errore: {response.status_code} - {response.json}")
-    
