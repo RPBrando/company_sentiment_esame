@@ -31,3 +31,12 @@ async def predicton(predict: schema.Prediction):
                 data = file
 
         data.append(predict)
+
+
+if __name__ == "__main__":
+        import uvicorn
+
+        uvicorn.run(app, "0.0.0.0", port= 8000)
+
+
+        
