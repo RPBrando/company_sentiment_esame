@@ -30,6 +30,8 @@ async def predicton(text: schema.Sentiment):
         print(predict)
         return predict
 
+
+
 if __name__ == "__main__":
         import uvicorn
 
