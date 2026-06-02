@@ -3,7 +3,7 @@ import requests
 url = "http://127.0.0.1:8000/predict"
 
 data = {
-    "sentiment" : "shit company"
+    "sentiment" : "normal company"
 }
 
 response = requests.post(url=url , json=data)

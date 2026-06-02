@@ -1,2 +1,4 @@
 text,label,score
 shit company,negative,0.8657313585281372
+greatest company,positive,0.9579247236251832
+normal company,neutral,0.5922916531562805
