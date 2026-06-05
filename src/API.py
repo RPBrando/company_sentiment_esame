@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 import schema
 import model
+import csvfiles_manager
 
 
 app = FastAPI() # creazione API
@@ -36,16 +37,17 @@ async def predicton(text: schema.Sentiment):
              "score": predict[0]["score"]
         }])
 
-        df = read_file()                    # lettura del dataframe dal file
+        df = csvfiles_manager.read_file()                    # lettura del dataframe dal file
 
         df_total = pd.concat([df,df_prediction], ignore_index=True) # concatenazione dei 2 dataframe
 
-        write_file(df_total)                # scrittura del file con il dataframe totale
+        csvfiles_manager.write_file(df_total)                # scrittura del file con il dataframe totale
+        
         return predict                     
 
 @app.get("/results") # stampa del file nel web
 async def showing_prediction():
-    df = read_file()
+    df = csvfiles_manager.read_file()
     return df.to_dict(orient="records")
 
 
