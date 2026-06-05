@@ -2,34 +2,9 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 import schema
 import model
-import pandas as pd
+
 
 app = FastAPI() # creazione API
-
-def read_file(): # funzione per leggere file - controllo dell'esistenza del file
-    try:
-        with open("results.csv", "r") as file:
-            df = pd.read_csv(file)
-
-    except FileNotFoundError:
-        df = pd.DataFrame(
-            columns=["text", "label", "score"]
-        )
-
-    except pd.errors.EmptyDataError:
-        df = pd.DataFrame(
-                columns=["text", "label", "score"]
-        )
-
-    return df
-
-def write_file(df): # scrittura del file
-    
-    with open("results.csv", "w") as file:
-        df.to_csv(file, index = False)
-        
-    print(f"file scritto correttamente")
-
 
 @app.get("/", response_class=HTMLResponse) # pagina iniziale
 async def root():
@@ -52,7 +27,7 @@ async def root():
 @app.post("/predict")                       # post. Ricezione del predict e scrittura su file
 async def predicton(text: schema.Sentiment):
         testo = text.sentiment              # estrazione del testo dalla classe Sentiment in schema
-        predict = model.prediction(testo)   # recupero della predizione del modello
+        predict = model.make_prediction(testo)   # recupero della predizione del modello
         print(predict)                      # stampa della predizione
 
         df_prediction = pd.DataFrame([{     # creazione del df con la sola stringa della predizione
