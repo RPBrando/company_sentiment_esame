@@ -47,7 +47,7 @@ async def showing_prediction():
 
 @app.get("/summary")
 async def showing_summary():
-       
+       # creazione del metodo per il monitoraggio costante della reputazione
 
 # partenza del file con uvicorn
 
