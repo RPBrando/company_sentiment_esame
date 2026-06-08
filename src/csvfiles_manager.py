@@ -48,7 +48,7 @@ def prediction_saver(text, label, score):
         write_file(df_total)
 
 
-def df_summary():
+def df_summary(): # funzione per il ritorno del sommario
     df = read_file()
     return {
          "n. interaction" : df.shape[0],
