@@ -29,19 +29,12 @@ async def root():
 async def predicton(text: schema.Sentiment):
         testo = text.sentiment              # estrazione del testo dalla classe Sentiment in schema
         predict = model.make_prediction(testo)   # recupero della predizione del modello
-        print(predict)                      # stampa della predizione
 
-        df_prediction = pd.DataFrame([{     # creazione del df con la sola stringa della predizione
-             "text": testo,
-             "label": predict[0]["label"],
-             "score": predict[0]["score"]
-        }])
-
-        df = csvfiles_manager.read_file()                    # lettura del dataframe dal file
-
-        df_total = pd.concat([df,df_prediction], ignore_index=True) # concatenazione dei 2 dataframe
-
-        csvfiles_manager.write_file(df_total)                # scrittura del file con il dataframe totale
+        csvfiles_manager.prediction_saver(        # creazione del df con la sola stringa della predizione
+               testo,
+               predict[0]["label"],
+               predict[0]["score"]
+        )    
         
         return predict                     
 
@@ -50,6 +43,11 @@ async def showing_prediction():
     df = csvfiles_manager.read_file()
     return df.to_dict(orient="records")
 
+# da completare
+
+@app.get("/summary")
+async def showing_summary():
+       
 
 # partenza del file con uvicorn
 
