@@ -46,3 +46,12 @@ def prediction_saver(text, label, score):
         }])
         df_total = df_merge(df_prediction)
         write_file(df_total)
+
+
+def df_summary():
+    df = read_file()
+    return {
+         "n. interaction" : df.shape[0],
+         "sentiment count" : df["label"].value_counts().to_dict(),
+         "average score" : float(df["score"].mean())
+    }
