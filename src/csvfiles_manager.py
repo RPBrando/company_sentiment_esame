@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+from datetime import datetime
 
 BASEDIR = Path(__file__).resolve().parent
 PROJECTDIR = BASEDIR.parent
@@ -13,12 +14,12 @@ def read_file(): # funzione per leggere file - controllo dell'esistenza del file
 
     except FileNotFoundError:
         df = pd.DataFrame(
-            columns=["text", "label", "score"]
+            columns=["time","text", "label", "score"]
         )
 
     except pd.errors.EmptyDataError:
         df = pd.DataFrame(
-                columns=["text", "label", "score"]
+                columns=["time","text", "label", "score"]
         )
 
     return df
@@ -38,14 +39,16 @@ def write_file(df): # scrittura del file
 
 
 def prediction_saver(text, label, score):
+        time = datetime.now().strftime("%d-%m-%Y %H:%M:%S") # aggiunta del timestamp per andamento nel tempo
         
         df_prediction = pd.DataFrame([{     # creazione del df con la sola stringa della predizione
+            "time": time,
             "text": text,
             "label": label,
             "score": score
         }])
-        df_total = df_merge(df_prediction)
-        write_file(df_total)
+        df_total = df_merge(df_prediction)  # creazione df con nuovo e già presenti in csv
+        write_file(df_total)                # scrittura su file
 
 
 def df_summary(): # funzione per il ritorno del sommario
