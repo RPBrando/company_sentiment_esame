@@ -26,14 +26,15 @@ async def root():
             """
 
 @app.post("/predict")                       # post. Ricezione del predict e scrittura su file
-async def predicton(text: schema.Sentiment):
-        testo = text.sentiment              # estrazione del testo dalla classe Sentiment in schema
-        predict = model.make_prediction(testo)   # recupero della predizione del modello
+async def predicton(text: schema.Text):
+        testo = text.sentiment
+        prediction_raw = model.make_prediction(testo)     # esecuzione della predizione del testo in input "grezza"
+        predict = schema.Prediction(**prediction_raw[0])   # validazione del testo di input
 
         csvfiles_manager.prediction_saver(        # creazione del df con la sola stringa della predizione
                testo,
-               predict[0]["label"],
-               predict[0]["score"]
+               predict.label,
+               predict.score
         )    
         
         return predict                     
