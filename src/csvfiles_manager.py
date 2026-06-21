@@ -10,6 +10,7 @@ MODELCHECKFILE = FILEPATH / "modelsummary.csv"
 
     
 def read_file(file_path= RESULTPATH): # funzione per leggere file - controllo dell'esistenza del file
+   
     try:
         with open(file_path, "r") as file:
             df = pd.read_csv(file)
@@ -60,6 +61,27 @@ def df_summary(): # funzione per il ritorno del sommario
          "sentiment count" : df["label"].value_counts().to_dict(),
          "average score" : float(df["score"].mean())
     }
+
+# lettura del file di metriche 
+
+def metrics_reader():
+
+# lettura del file
+    try:
+        with open(MODELCHECKFILE, "r") as metrics_file:
+            read_results = pd.read_csv(metrics_file)
+# in caso di file vuoto
+    except pd.errors.EmptyDataError:
+        read_results = "file vuoto"
+        print(read_results)
+# in caso di file inesistente
+    except FileNotFoundError:
+        with open(MODELCHECKFILE, "w") as metrics_file:
+            read_results = "file vuoto"
+            pass
+        
+    return read_results
+
 
 def metrics_saver(metric_list, sample_size=None):
     FILEPATH.mkdir(parents=True, exist_ok=True)

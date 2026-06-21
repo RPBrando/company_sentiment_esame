@@ -70,6 +70,11 @@ async def dataset_prediction(sample_size: int = 50):
     metric_report = metrics.metrics_creator(predictions, targets, sample_size=sample_size)
     return metric_report
     
+@app.get("/test")
+async def showmetrics():
+    df = csvfiles_manager.metrics_reader()
+    return df.to_dict(orient="records") # passaggio del df in dizionario json
+
 
 @app.get("/results") # stampa del file nel web
 async def showing_prediction():

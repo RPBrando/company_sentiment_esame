@@ -3,8 +3,10 @@ import requests
 url = "http://127.0.0.1:8000/test"
 
 params ={
-    "sample_size": 5000
+    "sample_size": 10000
 }
+
+print(params)
 
 response = requests.post(url, params=params)
 
