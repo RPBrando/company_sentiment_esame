@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 import schema
 import model
 import csvfiles_manager
+import newdata_manager
 
 
 app = FastAPI() # creazione API
@@ -29,7 +30,7 @@ async def root():
 async def predicton(text: schema.Text):
         testo = text.sentiment
         prediction_raw = model.make_prediction(testo)     # esecuzione della predizione del testo in input "grezza"
-        predict = schema.Prediction(**prediction_raw[0])   # validazione del testo di input
+        predict = schema.Prediction(**prediction_raw[0])   # validazione del testo di input (** dizionario spacchettato)
 
         csvfiles_manager.prediction_saver(        # creazione del df con la sola stringa della predizione
                testo,
@@ -37,7 +38,16 @@ async def predicton(text: schema.Text):
                predict.score
         )    
         
-        return predict                     
+        return predict  
+
+# creazione del file di sommario del dataset di prova  
+
+@app.post("/test"):
+async def dataset_prediction():
+    data = newdata_manager.Dataset("train.csv", "latin1")
+    text = schema.Text(data[0])
+    prediction_list = predicton(text)
+    
 
 @app.get("/results") # stampa del file nel web
 async def showing_prediction():
