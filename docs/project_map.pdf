@@ -1,0 +1,1238 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R] /Count 11 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1422 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+(COMPANY SENTIMENT - MAPPA DEL PROGETTO) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Data: 2026-06-21) Tj
+T*
+() Tj
+T*
+(1. Obiettivo Del Progetto) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Il progetto serve a costruire una piccola applicazione che analizza il sentiment di) Tj
+T*
+(testi aziendali o social.) Tj
+T*
+() Tj
+T*
+(In parole semplici:) Tj
+T*
+() Tj
+T*
+(- riceve un testo;) Tj
+T*
+(- usa un modello Hugging Face per classificarlo come positivo, neutro o negativo;) Tj
+T*
+(- salva le predizioni in un file CSV;) Tj
+T*
+(- legge un dataset gia' etichettato;) Tj
+T*
+(- confronta le predizioni del modello con le risposte corrette;) Tj
+T*
+(- salva le metriche nel tempo per poterle poi visualizzare in una dashboard.) Tj
+T*
+() Tj
+T*
+(2. Idea Generale) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Ci sono due flussi principali.) Tj
+T*
+() Tj
+T*
+(Flusso A - Uso Normale Dell'Applicazione) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(client.py) Tj
+T*
+(    manda un testo) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(POST /predict) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(model.py) Tj
+T*
+(    usa il modello Hugging Face) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(schema.py) Tj
+T*
+(    controlla che l'output abbia label e score) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(csvfiles_manager.py) Tj
+T*
+(    salva su data/results.csv) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Questo flusso risponde alla domanda:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Che sentiment ha questo testo?) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 1287 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+() Tj
+T*
+(Flusso B - Valutazione Del Modello) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(client_test.py) Tj
+T*
+(    chiede un test sul dataset) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(POST /test?sample_size=N) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(newdata_manager.py) Tj
+T*
+(    legge data/sentiment_datasets/train.csv) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(model.py) Tj
+T*
+(    predice il sentiment di tanti testi) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(metrics.py) Tj
+T*
+(    confronta predizioni e label vere) Tj
+T*
+(        |) Tj
+T*
+(        v) Tj
+T*
+(csvfiles_manager.py) Tj
+T*
+(    salva su data/modelsummary.csv) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Questo flusso risponde alla domanda:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Quanto sta andando bene il modello?) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(3. File Per File) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(src/API.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(E' il file principale dell'app FastAPI.) Tj
+T*
+() Tj
+T*
+(Contiene gli endpoint, cioe' le rotte che possono essere chiamate da browser, client) Tj
+T*
+(Python o dashboard.) Tj
+T*
+() Tj
+T*
+(Endpoint attuali:) Tj
+T*
+() Tj
+T*
+(- `GET /`) Tj
+T*
+(  - mostra una pagina HTML base;) Tj
+T*
+(  - serve solo come prova che l'app e' accesa.) Tj
+T*
+() Tj
+T*
+(- `POST /predict`) Tj
+T*
+(  - riceve un singolo testo;) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 1552 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+(  - chiama il modello;) Tj
+T*
+(  - valida la predizione;) Tj
+T*
+(  - salva il risultato in `results.csv`;) Tj
+T*
+(  - ritorna `label` e `score`.) Tj
+T*
+() Tj
+T*
+(- `GET /results`) Tj
+T*
+(  - legge `data/results.csv`;) Tj
+T*
+(  - ritorna lo storico delle predizioni fatte con `/predict`.) Tj
+T*
+() Tj
+T*
+(- `GET /summary`) Tj
+T*
+(  - legge `data/results.csv`;) Tj
+T*
+(  - ritorna un piccolo sommario: numero interazioni, conteggio sentiment, score medio.) Tj
+T*
+() Tj
+T*
+(- `POST /test?sample_size=N`) Tj
+T*
+(  - prende N righe dal dataset;) Tj
+T*
+(  - fa predire il modello;) Tj
+T*
+(  - confronta predizioni e risposte corrette;) Tj
+T*
+(  - salva le metriche in `modelsummary.csv`.) Tj
+T*
+() Tj
+T*
+(Nota importante:) Tj
+T*
+() Tj
+T*
+(`/predict` serve per una frase singola.) Tj
+T*
+() Tj
+T*
+(`/test` serve per valutare il modello su tante frasi del dataset.) Tj
+T*
+() Tj
+T*
+(src/model.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Contiene il modello Hugging Face.) Tj
+T*
+() Tj
+T*
+(Il modello usato e':) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(cardiffnlp/twitter-roberta-base-sentiment-latest) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(La funzione principale e':) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(make_prediction\(text, batch_size=16\)) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Puo' ricevere:) Tj
+T*
+() Tj
+T*
+(- una stringa singola;) Tj
+T*
+(- una lista di stringhe.) Tj
+T*
+() Tj
+T*
+(Usa:) Tj
+T*
+() Tj
+T*
+(- `batch_size=16` per processare testi a blocchi;) Tj
+T*
+(- `truncation=True` per tagliare testi troppo lunghi;) Tj
+T*
+(- `max_length=512` come limite massimo supportato dal modello.) Tj
+T*
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 1404 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+() Tj
+T*
+(src/schema.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Contiene i modelli Pydantic.) Tj
+T*
+() Tj
+T*
+(Servono a controllare che i dati abbiano la forma giusta.) Tj
+T*
+() Tj
+T*
+(Classi principali:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(class Text\(BaseModel\):) Tj
+T*
+(    sentiment: str) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Controlla l'input di `/predict`.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(class Prediction\(BaseModel\):) Tj
+T*
+(    label: str) Tj
+T*
+(    score: float) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Controlla l'output del modello.) Tj
+T*
+() Tj
+T*
+(src/csvfiles_manager.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Gestisce lettura e scrittura dei CSV.) Tj
+T*
+() Tj
+T*
+(File gestiti:) Tj
+T*
+() Tj
+T*
+(- `data/results.csv`) Tj
+T*
+(  - contiene le predizioni fatte dall'app;) Tj
+T*
+(  - colonne principali: `time`, `text`, `label`, `score`.) Tj
+T*
+() Tj
+T*
+(- `data/modelsummary.csv`) Tj
+T*
+(  - contiene le metriche del modello;) Tj
+T*
+(  - serve per confrontare test fatti in momenti diversi.) Tj
+T*
+() Tj
+T*
+(Funzioni principali:) Tj
+T*
+() Tj
+T*
+(- `read_file\(\)`) Tj
+T*
+(  - legge un CSV;) Tj
+T*
+(  - se il file manca o e' vuoto, crea un DataFrame base.) Tj
+T*
+() Tj
+T*
+(- `prediction_saver\(text, label, score\)`) Tj
+T*
+(  - crea una riga con timestamp, testo, label e score;) Tj
+T*
+(  - la aggiunge allo storico `results.csv`.) Tj
+T*
+() Tj
+T*
+(- `df_summary\(\)`) Tj
+T*
+(  - crea un piccolo riassunto di `results.csv`.) Tj
+T*
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 1291 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+() Tj
+T*
+(- `metrics_saver\(metric_list, sample_size=None\)`) Tj
+T*
+(  - trasforma le metriche in una tabella;) Tj
+T*
+(  - aggiunge `time` e `sample_size`;) Tj
+T*
+(  - aggiunge il nuovo report allo storico `modelsummary.csv`.) Tj
+T*
+() Tj
+T*
+(src/newdata_manager.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Legge il dataset pubblico.) Tj
+T*
+() Tj
+T*
+(Dataset attuale:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(data/sentiment_datasets/train.csv) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(La classe principale e':) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Dataset\("train.csv", "latin1"\)) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Metodo principale:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(return_text_target\(sample_size=None\)) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Fa queste cose:) Tj
+T*
+() Tj
+T*
+(1. legge il CSV;) Tj
+T*
+(2. controlla che esistano le colonne `text` e `sentiment`;) Tj
+T*
+(3. elimina righe con testo o label mancanti;) Tj
+T*
+(4. elimina testi vuoti;) Tj
+T*
+(5. se `sample_size` e' impostato, prende solo le prime N righe valide;) Tj
+T*
+(6. ritorna:) Tj
+T*
+(   - `text`: lista dei testi;) Tj
+T*
+(   - `target`: lista delle label corrette.) Tj
+T*
+() Tj
+T*
+(src/metrics.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Calcola le metriche del modello.) Tj
+T*
+() Tj
+T*
+(Usa:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(classification_report) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(da scikit-learn.) Tj
+T*
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 1125 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+() Tj
+T*
+(Confronta:) Tj
+T*
+() Tj
+T*
+(- `target`: label reali del dataset;) Tj
+T*
+(- `prediction`: label predette dal modello.) Tj
+T*
+() Tj
+T*
+(Poi chiama:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(csvfiles_manager.metrics_saver\(...\)) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(per salvare il report in `data/modelsummary.csv`.) Tj
+T*
+() Tj
+T*
+(src/client.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Client di test per `/predict`.) Tj
+T*
+() Tj
+T*
+(Serve per mandare una singola frase all'API.) Tj
+T*
+() Tj
+T*
+(Esempio logico:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Mando: "normal company") Tj
+T*
+(Ricevo: {"label": "neutral", "score": ...}) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(src/client_test.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Client di test per `/test`.) Tj
+T*
+() Tj
+T*
+(Serve per avviare una valutazione del modello sul dataset.) Tj
+T*
+() Tj
+T*
+(Esempio:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(params = {"sample_size": 1000}) Tj
+T*
+(requests.post\(url, params=params\)) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Significa:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Valuta il modello sulle prime 1000 righe valide del dataset.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(4. File CSV) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(data/results.csv) Tj
+T*
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 1255 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+() Tj
+T*
+() Tj
+T*
+(Contiene lo storico delle predizioni singole fatte con `/predict`.) Tj
+T*
+() Tj
+T*
+(Esempio:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(time,text,label,score) Tj
+T*
+(2026-06-21 10:00:00,normal company,neutral,0.59) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Serve a monitorare l'uso normale dell'app.) Tj
+T*
+() Tj
+T*
+(data/modelsummary.csv) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Contiene lo storico delle metriche del modello.) Tj
+T*
+() Tj
+T*
+(Esempio:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(time,sample_size,metric_class,precision,recall,f1_score,support) Tj
+T*
+(2026-06-21 10:00:00,1000,negative,0.68,0.80,0.73,280) Tj
+T*
+(2026-06-21 10:00:00,1000,neutral,0.77,0.51,0.61,420) Tj
+T*
+(2026-06-21 10:00:00,1000,positive,0.67,0.87,0.75,300) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Serve a vedere se il modello migliora o peggiora nel tempo.) Tj
+T*
+() Tj
+T*
+(5. Come Avviare Il Progetto) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Dal root del progetto:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(uvicorn src.API:app --reload) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Poi puoi aprire:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(http://127.0.0.1:8000) Tj
+T*
+(http://127.0.0.1:8000/docs) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(6. Come Testare Le Parti) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Per testare una predizione singola:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(python src/client.py) Tj
+T*
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 16 0 R >>
+endobj
+18 0 obj
+<< /Length 1279 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+() Tj
+T*
+() Tj
+T*
+(Per testare il modello sul dataset:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(python src/client_test.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Se sei gia' dentro la cartella `src`:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(python client.py) Tj
+T*
+(python client_test.py) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(7. Dove Siamo Arrivati) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Il progetto ora ha:) Tj
+T*
+() Tj
+T*
+(- API FastAPI;) Tj
+T*
+(- modello Hugging Face;) Tj
+T*
+(- validazione base con Pydantic;) Tj
+T*
+(- salvataggio predizioni;) Tj
+T*
+(- lettura dataset pubblico;) Tj
+T*
+(- pulizia dati sporchi;) Tj
+T*
+(- calcolo metriche;) Tj
+T*
+(- storico metriche per confronti futuri.) Tj
+T*
+() Tj
+T*
+(Questa e' gia' una base forte per la traccia.) Tj
+T*
+() Tj
+T*
+(8. Cosa Manca Ancora) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Prossimi passi principali:) Tj
+T*
+() Tj
+T*
+(1. Aggiungere una rotta per leggere `modelsummary.csv`.) Tj
+T*
+(   - esempio: `GET /model-metrics`) Tj
+T*
+() Tj
+T*
+(2. Creare un README serio.) Tj
+T*
+(   - obiettivo progetto;) Tj
+T*
+(   - modello usato;) Tj
+T*
+(   - endpoint;) Tj
+T*
+(   - come avviare;) Tj
+T*
+(   - come testare.) Tj
+T*
+() Tj
+T*
+(3. Creare `requirements.txt`.) Tj
+T*
+(   - fastapi;) Tj
+T*
+(   - uvicorn;) Tj
+T*
+(   - pandas;) Tj
+T*
+(   - transformers;) Tj
+T*
+(   - scikit-learn;) Tj
+T*
+ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 18 0 R >>
+endobj
+20 0 obj
+<< /Length 1032 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+(   - requests.) Tj
+T*
+() Tj
+T*
+(4. Aggiungere test semplici.) Tj
+T*
+(   - test lettura dataset;) Tj
+T*
+(   - test calcolo metriche;) Tj
+T*
+(   - test salvataggio CSV.) Tj
+T*
+() Tj
+T*
+(5. Piu' avanti: dashboard.) Tj
+T*
+(   - Grafana o Streamlit;) Tj
+T*
+(   - grafici su accuracy, f1_score, sentiment nel tempo.) Tj
+T*
+() Tj
+T*
+(6. Piu' avanti: deploy.) Tj
+T*
+(   - possibile Hugging Face Spaces.) Tj
+T*
+() Tj
+T*
+(9. Cose Da Ricordare) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(`GET`:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(chiedo dati al server) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(`POST`:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(chiedo al server di fare un'azione) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(`/predict`:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(una frase singola) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(`/test`:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(tante frasi dal dataset) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(`results.csv`:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(storico delle predizioni dell'app) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(`modelsummary.csv`:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(storico delle metriche del modello) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 20 0 R >>
+endobj
+22 0 obj
+<< /Length 922 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+() Tj
+T*
+(10. Mini Glossario) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Label:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(risposta del modello: positive, neutral, negative) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Score:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(quanto il modello e' sicuro della risposta) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Target:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(risposta corretta presente nel dataset) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Prediction:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(risposta generata dal modello) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Accuracy:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(percentuale di predizioni corrette) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Precision:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(quando il modello dice una classe, quanto spesso ha ragione) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Recall:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(quanti esempi reali di una classe riesce a trovare) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(F1-score:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(media bilanciata tra precision e recall) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 22 0 R >>
+endobj
+24 0 obj
+<< /Length 132 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+(Support:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(quanti esempi ci sono per quella classe) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+25 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 24 0 R >>
+endobj
+xref
+0 26
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000184 00000 n 
+0000000254 00000 n 
+0000001728 00000 n 
+0000001854 00000 n 
+0000003193 00000 n 
+0000003319 00000 n 
+0000004923 00000 n 
+0000005049 00000 n 
+0000006506 00000 n 
+0000006634 00000 n 
+0000007978 00000 n 
+0000008106 00000 n 
+0000009284 00000 n 
+0000009412 00000 n 
+0000010720 00000 n 
+0000010848 00000 n 
+0000012180 00000 n 
+0000012308 00000 n 
+0000013393 00000 n 
+0000013521 00000 n 
+0000014495 00000 n 
+0000014623 00000 n 
+0000014807 00000 n 
+trailer
+<< /Size 26 /Root 1 0 R >>
+startxref
+14935
+%%EOF

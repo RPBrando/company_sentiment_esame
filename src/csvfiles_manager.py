@@ -9,9 +9,9 @@ RESULTPATH = FILEPATH / "results.csv"
 MODELCHECKFILE = FILEPATH / "modelsummary.csv"
 
     
-def read_file(): # funzione per leggere file - controllo dell'esistenza del file
+def read_file(file_path= RESULTPATH): # funzione per leggere file - controllo dell'esistenza del file
     try:
-        with open(RESULTPATH, "r") as file:
+        with open(file_path, "r") as file:
             df = pd.read_csv(file)
 
     except FileNotFoundError:
@@ -61,7 +61,40 @@ def df_summary(): # funzione per il ritorno del sommario
          "average score" : float(df["score"].mean())
     }
 
-def metrics_saver(metric_list):
+def metrics_saver(metric_list, sample_size=None):
     FILEPATH.mkdir(parents=True, exist_ok=True)
+
+    # classification_report(output_dict=True) restituisce un dizionario annidato:
+    # ogni chiave principale e' una classe/metrica, ad esempio "negative",
+    # "neutral", "positive", "accuracy", "macro avg".
+    # Con transpose() trasformiamo quel dizionario in una tabella leggibile.
     metric_df = pd.DataFrame(metric_list).transpose()
-    metric_df.to_csv(MODELCHECKFILE, index=True)
+
+    # Porto l'indice dentro una colonna normale.
+    # Questo rende il CSV piu' facile da leggere e da usare in dashboard:
+    # metric_class conterra' valori come negative, neutral, positive, accuracy.
+    metric_df = metric_df.reset_index().rename(columns={
+        "index": "metric_class",
+        "f1-score": "f1_score"
+    })
+
+    # Aggiungo il timestamp del report.
+    # Serve per confrontare nel tempo metriche vecchie e nuove su Grafana.
+    metric_df.insert(0, "time", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    # Salvo anche il numero di righe usate nel test.
+    # Una accuracy su 50 esempi e una accuracy su 5000 esempi non hanno lo stesso peso.
+    metric_df.insert(1, "sample_size", sample_size)
+
+    try:
+        # Se esiste gia' uno storico metriche, lo leggo e aggiungo il nuovo report.
+        old_metric_df = pd.read_csv(MODELCHECKFILE)
+        metric_df = pd.concat([old_metric_df, metric_df], ignore_index=True)
+    except FileNotFoundError:
+        # Se il file non esiste ancora, il report corrente sara' il primo storico.
+        pass
+    except pd.errors.EmptyDataError:
+        # Se il file esiste ma e' vuoto, ripartiamo dal report corrente.
+        pass
+
+    metric_df.to_csv(MODELCHECKFILE, index=False)

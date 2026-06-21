@@ -65,8 +65,9 @@ async def dataset_prediction(sample_size: int = 50):
     ]
 
     # Confrontiamo label vere e label predette.
-    # metrics_creator salva anche il report in data/modelsummary.csv.
-    metric_report = metrics.metrics_creator(predictions, targets)
+    # Passiamo anche sample_size, cosi' nello storico metriche resta scritto
+    # su quante righe del dataset e' stata fatta quella valutazione.
+    metric_report = metrics.metrics_creator(predictions, targets, sample_size=sample_size)
     return metric_report
     
 
