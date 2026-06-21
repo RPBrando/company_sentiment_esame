@@ -6,6 +6,8 @@ BASEDIR = Path(__file__).resolve().parent
 PROJECTDIR = BASEDIR.parent
 FILEPATH = PROJECTDIR/"data"
 RESULTPATH = FILEPATH / "results.csv"
+MODELCHECKFILE = FILEPATH / "modelsummary.csv"
+
     
 def read_file(): # funzione per leggere file - controllo dell'esistenza del file
     try:
@@ -58,3 +60,8 @@ def df_summary(): # funzione per il ritorno del sommario
          "sentiment count" : df["label"].value_counts().to_dict(),
          "average score" : float(df["score"].mean())
     }
+
+def metrics_saver(metric_list):
+    FILEPATH.mkdir(parents=True, exist_ok=True)
+    metric_df = pd.DataFrame(metric_list).transpose()
+    metric_df.to_csv(MODELCHECKFILE, index=True)

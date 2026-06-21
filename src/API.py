@@ -4,6 +4,7 @@ import schema
 import model
 import csvfiles_manager
 import newdata_manager
+import metrics
 
 
 app = FastAPI() # creazione API
@@ -42,11 +43,15 @@ async def predicton(text: schema.Text):
 
 # creazione del file di sommario del dataset di prova  
 
-@app.post("/test"):
+@app.post("/test")
 async def dataset_prediction():
     data = newdata_manager.Dataset("train.csv", "latin1")
-    text = schema.Text(data[0])
-    prediction_list = predicton(text)
+    texts, targets = data.return_text_target()
+
+    text = schema.ListText(sentiment_list=texts)
+    prediction_list = await predicton(text)
+    
+    return prediction_list
     
 
 @app.get("/results") # stampa del file nel web

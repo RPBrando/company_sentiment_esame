@@ -8,3 +8,5 @@ class Prediction(BaseModel): # creazione della crasse che rappresenta il dato in
     label: str
     score: float
 
+class ListText(BaseModel):
+    sentiment_list: list[str]
