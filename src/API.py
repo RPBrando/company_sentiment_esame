@@ -44,14 +44,30 @@ async def predicton(text: schema.Text):
 # creazione del file di sommario del dataset di prova  
 
 @app.post("/test")
-async def dataset_prediction():
+async def dataset_prediction(sample_size: int = 50):
+    # Creo il gestore del dataset: lui sa dove si trova train.csv
+    # e come estrarre testi e label reali.
     data = newdata_manager.Dataset("train.csv", "latin1")
-    texts, targets = data.return_text_target()
 
-    text = schema.ListText(sentiment_list=texts)
-    prediction_list = await predicton(text)
-    
-    return prediction_list
+    # texts contiene i testi da dare al modello.
+    # targets contiene le label vere del dataset, usate per valutare il modello.
+    texts, targets = data.return_text_target(sample_size=sample_size)
+
+    # Il modello puo' ricevere una lista di testi e restituisce una lista
+    # di dizionari, uno per ogni testo: {"label": ..., "score": ...}.
+    prediction_raw = model.make_prediction(texts, batch_size=16)
+
+    # Ogni output grezzo viene validato con Pydantic.
+    # Alla fine teniamo solo la label predetta, per confrontarla con targets.
+    predictions = [
+        schema.Prediction(**single_prediction).label
+        for single_prediction in prediction_raw
+    ]
+
+    # Confrontiamo label vere e label predette.
+    # metrics_creator salva anche il report in data/modelsummary.csv.
+    metric_report = metrics.metrics_creator(predictions, targets)
+    return metric_report
     
 
 @app.get("/results") # stampa del file nel web
