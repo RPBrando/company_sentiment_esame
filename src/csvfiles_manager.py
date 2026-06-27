@@ -53,8 +53,9 @@ def prediction_saver(text, label, score):
         df_total = df_merge(df_prediction)  # creazione df con nuovo e già presenti in csv
         write_file(df_total)                # scrittura su file
 
+# funzione per il ritorno del sommario
 
-def df_summary(): # funzione per il ritorno del sommario
+def df_summary(): 
     df = read_file()
     return {
          "n. interaction" : df.shape[0],
@@ -72,14 +73,16 @@ def metrics_reader():
             read_results = pd.read_csv(metrics_file)
 # in caso di file vuoto
     except pd.errors.EmptyDataError:
-        read_results = "file vuoto"
+        read_results = pd.DataFrame()
         print(read_results)
 # in caso di file inesistente
     except FileNotFoundError:
         with open(MODELCHECKFILE, "w") as metrics_file:
-            read_results = "file vuoto"
+            read_results = pd.DataFrame()
             pass
-        
+
+# il tipo di risultato inviato è sempre di tipo Dataframe Pandas anche se vuoto per non far rompere l'API
+
     return read_results
 
 

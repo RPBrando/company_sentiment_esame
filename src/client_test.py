@@ -1,6 +1,6 @@
 import requests
 
-url = "http://127.0.0.1:8000/test"
+url = "http://127.0.0.1:8000/model-metrics"
 
 params ={
     "sample_size": 10000

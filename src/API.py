@@ -43,7 +43,7 @@ async def predicton(text: schema.Text):
 
 # creazione del file di sommario del dataset di prova  
 
-@app.post("/test")
+@app.post("/model-metrics")
 async def dataset_prediction(sample_size: int = 50):
     # Creo il gestore del dataset: lui sa dove si trova train.csv
     # e come estrarre testi e label reali.
@@ -70,7 +70,7 @@ async def dataset_prediction(sample_size: int = 50):
     metric_report = metrics.metrics_creator(predictions, targets, sample_size=sample_size)
     return metric_report
     
-@app.get("/test")
+@app.get("/model-metrics")
 async def showmetrics():
     df = csvfiles_manager.metrics_reader()
     return df.to_dict(orient="records") # passaggio del df in dizionario json
@@ -86,7 +86,6 @@ async def showing_prediction():
 @app.get("/summary")
 async def showing_summary():
        return csvfiles_manager.df_summary()
-
 
 # partenza del file con uvicorn
 
