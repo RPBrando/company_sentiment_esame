@@ -53,7 +53,7 @@ def prediction_saver(text, label, score):
         df_total = df_merge(df_prediction)  # creazione df con nuovo e già presenti in csv
         write_file(df_total)                # scrittura su file
 
-# funzione per il ritorno del sommario
+# funzione per il ritorno del sommario di tutte le predizioni effettuate e salvate
 
 def df_summary(): 
     df = read_file()
