@@ -87,28 +87,31 @@ def metrics_reader():
 
 
 def metrics_saver(metric_list, sample_size=None):
+
+    """
+    metrics.metric_report(output_dict=True) restituisce un dizionario annidato
+    ogni chiave principale e' una classe/metrica, ad esempio "negative","neutral", "positive", "accuracy", "macro avg".
+    Con transpose() trasformiamo quel dizionario in una tabella leggibile.
+    """
+    # controllo dell'esistenza della path giusta
+
     FILEPATH.mkdir(parents=True, exist_ok=True)
 
-    # classification_report(output_dict=True) restituisce un dizionario annidato:
-    # ogni chiave principale e' una classe/metrica, ad esempio "negative",
-    # "neutral", "positive", "accuracy", "macro avg".
-    # Con transpose() trasformiamo quel dizionario in una tabella leggibile.
+
     metric_df = pd.DataFrame(metric_list).transpose()
 
-    # Porto l'indice dentro una colonna normale.
-    # Questo rende il CSV piu' facile da leggere e da usare in dashboard:
-    # metric_class conterra' valori come negative, neutral, positive, accuracy.
+    # Porto l'indice dentro una colonna normale per facilità di lettura e comodità in dashboard
+
     metric_df = metric_df.reset_index().rename(columns={
         "index": "metric_class",
         "f1-score": "f1_score"
     })
 
-    # Aggiungo il timestamp del report.
-    # Serve per confrontare nel tempo metriche vecchie e nuove su Grafana.
+    # Aggiungo il timestamp del report (utile per grafana sopratutto)
     metric_df.insert(0, "time", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     # Salvo anche il numero di righe usate nel test.
-    # Una accuracy su 50 esempi e una accuracy su 5000 esempi non hanno lo stesso peso.
+
     metric_df.insert(1, "sample_size", sample_size)
 
     try:

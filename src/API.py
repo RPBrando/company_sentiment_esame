@@ -45,28 +45,31 @@ async def predicton(text: schema.Text):
 
 @app.post("/model-metrics")
 async def dataset_prediction(sample_size: int = 50):
+
     # Creo il gestore del dataset: lui sa dove si trova train.csv
-    # e come estrarre testi e label reali.
+  
     data = newdata_manager.Dataset("train.csv", "latin1")
 
     # texts contiene i testi da dare al modello.
     # targets contiene le label vere del dataset, usate per valutare il modello.
+
     texts, targets = data.return_text_target(sample_size=sample_size)
 
-    # Il modello puo' ricevere una lista di testi e restituisce una lista
-    # di dizionari, uno per ogni testo: {"label": ..., "score": ...}.
+    # Il modello puo' ricevere una lista di testi e restituisce una lista di dizionari, uno per ogni testo: {"label": ..., "score": ...}.
+
     prediction_raw = model.make_prediction(texts, batch_size=16)
 
     # Ogni output grezzo viene validato con Pydantic.
     # Alla fine teniamo solo la label predetta, per confrontarla con targets.
+
     predictions = [
         schema.Prediction(**single_prediction).label
         for single_prediction in prediction_raw
     ]
 
     # Confrontiamo label vere e label predette.
-    # Passiamo anche sample_size, cosi' nello storico metriche resta scritto
-    # su quante righe del dataset e' stata fatta quella valutazione.
+    # Passiamo anche sample_size, cosi' nello storico metriche resta scritto su quante righe del dataset e' stata fatta quella valutazione.
+    
     metric_report = metrics.metrics_creator(predictions, targets, sample_size=sample_size)
     return metric_report
     
