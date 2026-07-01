@@ -58,6 +58,8 @@ Spiegare precision, recall, f1-score, accuracy in modo semplice.
 ## Come avviare il progetto
 Per avviare il progetto serve il seguente codice:
 
+Importare tutte le librerie necessarie con requirements.txt
+
 Da cartella del progetto:
 uvicorn src/api:app --reload
 
