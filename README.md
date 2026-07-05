@@ -1,5 +1,7 @@
 # company_sentiment
 
+[![CI](https://github.com/RPBrando/company_sentiment/blob/main/.github/workflows/ci.yml/badge.csv)](https://github.com/RPBrando/company_sentiment/blob/main/.github/workflows/ci.yml)
+
 ## Obiettivo del progetto
 
 Controllare l'andamento del sentiment aziendale online. Creare pipeline di CI/CD in modo 
@@ -112,9 +114,6 @@ Una volta avviato il file contenente le API, è possibile avviare anche client.p
 Progetto testato e correttamente funzionante per:
 predizione del singolo sentiment, controllo delle metriche, salvataggio dello storico in file CSV sia della predizione che delle metriche.
 
-## BADGE CI
-
-[![CI](https://github.com/RPBrando/company_sentiment/blob/main/.github/workflows/ci.yml/badge.csv)](https://github.com/RPBrando/company_sentiment/blob/main/.github/workflows/ci.yml)
 
 ## Sviluppi futuri
 - Dashboard
