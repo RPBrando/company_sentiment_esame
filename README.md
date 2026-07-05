@@ -1,6 +1,6 @@
 # company_sentiment
 
-[![CI](https://github.com/RPBrando/company_sentiment/blob/main/.github/workflows/ci.yml/badge.csv)](https://github.com/RPBrando/company_sentiment/blob/main/.github/workflows/ci.yml)
+[![CI](https://github.com/RPBrando/company_sentiment/actions/workflows/ci.yml/badge.csv)](https://github.com/RPBrando/company_sentiment/actions/workflows/ci.yml)
 
 ## Obiettivo del progetto
 
