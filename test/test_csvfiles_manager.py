@@ -1,4 +1,5 @@
 import src.csvfiles_manager as csv
+import pandas as pd
 
 
 # pimo test sul sommario del csv
@@ -16,4 +17,13 @@ def test_df_summary():
     assert "n. interaction" in summary
     assert "sentiment count" in summary
     assert "average score" in summary
+
+def test_metrics_reader():
+    metrics = csv.metrics_reader()
+    assert isinstance(metrics, pd.DataFrame)
+
+def test_read_file():
+
+    df = csv.read_file()
+    assert isinstance(df, pd.DataFrame)
 

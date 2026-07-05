@@ -1,10 +1,16 @@
 from sklearn.metrics import classification_report
-import csvfiles_manager
+from src import csvfiles_manager
 
-def metrics_creator(prediction, target, sample_size=None):
+def metrics_creator(prediction, target, save = True, sample_size=None):
+
+    """
+    prediction = -> predizione
+    target -> dato reale
+    save -> viene passato automaticamente come True. Il test invia questo parametro come False
+    sample_size -> None | da passare per alleggerire il processo o dataset molto grandi
+    """
     # classification_report confronta label vere e label predette.
-    # target = label reali del dataset
-    # prediction = label generate dal modello
+
     metric_report = classification_report(
         target,
         prediction,
@@ -13,5 +19,6 @@ def metrics_creator(prediction, target, sample_size=None):
     )
 
     # Salvo il report su CSV insieme al sample_size usato per il test.
-    csvfiles_manager.metrics_saver(metric_report, sample_size=sample_size)
+    if save == True:
+        csvfiles_manager.metrics_saver(metric_report, sample_size=sample_size)
     return metric_report
