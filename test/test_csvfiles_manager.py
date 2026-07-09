@@ -18,9 +18,13 @@ def test_df_summary():
     assert "sentiment count" in summary
     assert "average score" in summary
 
+# controllo che la lettura delle metriche ritorni un Dataset Pandas
+
 def test_metrics_reader():
     metrics = csv.metrics_reader()
     assert isinstance(metrics, pd.DataFrame)
+
+# controllo che la lettura del file ritorni un Dataset Pandas
 
 def test_read_file():
 

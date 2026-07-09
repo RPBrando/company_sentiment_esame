@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-import schema
-import model
-import csvfiles_manager
-import newdata_manager
-import metrics
+
+# Importiamo i moduli passando dal pacchetto src.
+# In questo modo l'app funziona anche quando viene avviata da Docker con "src.api:app".
+from src import schema
+from src import model
+from src import csvfiles_manager
+from src import newdata_manager
+from src import metrics
 
 
 app = FastAPI() # creazione API
