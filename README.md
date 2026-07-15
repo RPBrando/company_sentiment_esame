@@ -109,10 +109,31 @@ uvicorn src/api:app --reload
 
 Una volta avviato il file contenente le API, è possibile avviare anche client.py per testare un singolo sentiment. Per quanto riguarda il controllo del test su dataset di grandi dimensioni, avviare client_test.py e caricare un dataset in data/sentiment_datasets.
 
+## Avvio con Docker
+
+Il progetto può essere avviato anche tramite Docker, senza dover configurare manualmente l'ambiente Python locale.
+
+### Build dell'immagine
+
+Dalla cartella principale del progetto:
+
+```bash
+docker build -t company-sentiment .
+
+### Avvio del container
+
+docker run --rm -p 8000:8000 company-sentiment
+
+L'api sarà disponibile su: http://127.0.0.1:8000
+
+Per la documentazione automatica andare su: http://127.0.0.1:8000/docs
+
 
 ## Stato attuale
 Progetto testato e correttamente funzionante per:
 predizione del singolo sentiment, controllo delle metriche, salvataggio dello storico in file CSV sia della predizione che delle metriche.
+Avviato anche progetto per il deploy. Creato Dockerfile e testato creando immagine e container.
+
 
 
 ## Sviluppi futuri

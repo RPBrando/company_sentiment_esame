@@ -29,14 +29,23 @@ async def root():
             </body>
             </html>
             """
+# post. Ricezione del predict e scrittura su file
 
-@app.post("/predict")                       # post. Ricezione del predict e scrittura su file
+@app.post("/predict") 
 async def predicton(text: schema.Text):
         testo = text.sentiment
-        prediction_raw = model.make_prediction(testo)     # esecuzione della predizione del testo in input "grezza"
-        predict = schema.Prediction(**prediction_raw[0])   # validazione del testo di input (** dizionario spacchettato)
 
-        csvfiles_manager.prediction_saver(        # creazione del df con la sola stringa della predizione
+# esecuzione della predizione del testo in input "grezza"
+
+        prediction_raw = model.make_prediction(testo)     
+
+# validazione del testo di input (** dizionario spacchettato)
+
+        predict = schema.Prediction(**prediction_raw[0]) 
+         
+# creazione del df con la sola stringa della predizione
+
+        csvfiles_manager.prediction_saver(        
                testo,
                predict.label,
                predict.score
