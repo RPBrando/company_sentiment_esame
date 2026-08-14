@@ -100,6 +100,9 @@ async def showing_prediction():
 
 @app.get("/summary")
 async def showing_summary():
+
+       # DA IMPLEMENTARE GRAFANA CON LE DASHBOARD
+
        return csvfiles_manager.df_summary()
 
 # partenza del file con uvicorn

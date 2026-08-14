@@ -130,6 +130,7 @@ Per la documentazione automatica andare su: http://127.0.0.1:8000/docs
 
 
 ## Stato attuale
+
 Progetto testato e correttamente funzionante per:
 predizione del singolo sentiment, controllo delle metriche, salvataggio dello storico in file CSV sia della predizione che delle metriche.
 Avviato anche progetto per il deploy. Creato Dockerfile e testato creando immagine e container.
@@ -139,7 +140,7 @@ Avviato anche progetto per il deploy. Creato Dockerfile e testato creando immagi
 ## Sviluppi futuri
 - Dashboard
 - Grafana
-- CI/CD
+- CD
 - Deploy
 - Retraining/fine-tuning
 - Auto-apprendimento da sentiment ricevuti

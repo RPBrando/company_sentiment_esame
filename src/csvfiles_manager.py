@@ -8,8 +8,12 @@ FILEPATH = PROJECTDIR/"data"
 RESULTPATH = FILEPATH / "results.csv"
 MODELCHECKFILE = FILEPATH / "modelsummary.csv"
 
-    
+
+
+# LETTURA DEL FILE
+
 def read_file(file_path= RESULTPATH): # funzione per leggere file - controllo dell'esistenza del file
+
    
     try:
         with open(file_path, "r") as file:
@@ -17,31 +21,38 @@ def read_file(file_path= RESULTPATH): # funzione per leggere file - controllo de
 
     except FileNotFoundError:
         df = pd.DataFrame(
-            columns=["time","text", "label", "score"]
+            columns=["time", "text", "label", "score"]
         )
+        write_file(df, file_path)
 
     except pd.errors.EmptyDataError:
         df = pd.DataFrame(
-                columns=["time","text", "label", "score"]
+                columns=["time", "text", "label", "score"]
         )
+        write_file(df, file_path)
 
     return df
 
+# UNIONE DEL DF PRESENTE SUL FILE E DI QUELLO PREDETTO
 
-def df_merge(df_predict):
+def df_merge(df_predict, result_path = RESULTPATH):
      
-     df_file = read_file()
+     df_file = read_file(result_path)
      return pd.concat([df_file, df_predict], ignore_index= True)
 
-def write_file(df): # scrittura del file
+# SCRITTURA DEL FILE
+
+def write_file(df, result_path= RESULTPATH): # scrittura del file
         FILEPATH.mkdir(parents = True, exist_ok=True)       # controllo sull'esistenza della cartella e sottocartelle
-        with open(RESULTPATH, "w") as file:
+        with open(result_path, "w") as file:
             df.to_csv(file, index = False)
         
         print(f"file scritto correttamente")
 
+# SALVATAGGIO DELLE PREDIZIONI
 
-def prediction_saver(text, label, score):
+def prediction_saver(text, label, score, result_path = RESULTPATH):
+        
         time = datetime.now().strftime("%d-%m-%Y %H:%M:%S") # aggiunta del timestamp per andamento nel tempo
         
         df_prediction = pd.DataFrame([{     # creazione del df con la sola stringa della predizione
@@ -50,8 +61,8 @@ def prediction_saver(text, label, score):
             "label": label,
             "score": score
         }])
-        df_total = df_merge(df_prediction)  # creazione df con nuovo e già presenti in csv
-        write_file(df_total)                # scrittura su file
+        df_total = df_merge(df_prediction, result_path)  # creazione df con nuovo e già presenti in csv
+        write_file(df_total, result_path)                # scrittura su file
 
 # funzione per il ritorno del sommario di tutte le predizioni effettuate e salvate
 
@@ -108,7 +119,7 @@ def metrics_saver(metric_list, sample_size=None):
     })
 
     # Aggiungo il timestamp del report (utile per grafana sopratutto)
-    metric_df.insert(0, "time", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    metric_df.insert(0, "time", datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
 
     # Salvo anche il numero di righe usate nel test.
 
@@ -116,6 +127,7 @@ def metrics_saver(metric_list, sample_size=None):
 
     try:
         # Se esiste gia' uno storico metriche, lo leggo e aggiungo il nuovo report.
+        
         old_metric_df = pd.read_csv(MODELCHECKFILE)
         metric_df = pd.concat([old_metric_df, metric_df], ignore_index=True)
     except FileNotFoundError:

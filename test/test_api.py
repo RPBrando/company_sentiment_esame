@@ -1,7 +1,12 @@
 from fastapi.testclient import TestClient
+from pathlib import Path
 from src import csvfiles_manager
 from src import model
 from src.api import app
+
+# test del client
+
+fake_file = Path("tmp_results.csv")
 
 client = TestClient(app)
 
@@ -29,3 +34,73 @@ def test_predict(monkeypatch):
     result = response.json()
     assert result["label"] == "neutral"
     assert result["score"] == 0.90
+
+
+
+def test_results_data(monkeypatch, tmp_path):
+
+    fake_reader = csvfiles_manager.read_file
+
+    prediction_saver = csvfiles_manager.prediction_saver
+    
+
+
+    fake_path = tmp_path / fake_file
+    fake_path.touch()
+
+    prediction_saver(
+        "prova",
+        "neutral",
+        0.1,
+        fake_path
+        )
+
+    def fake_reader_file ():
+        return fake_reader(fake_path)
+
+    monkeypatch.setattr(csvfiles_manager, "read_file", fake_reader_file)
+
+
+    # controllo che l'api risponda
+
+    response = client.get("/results")
+
+    assert response.status_code == 200
+
+    results = response.json()
+
+    # controllo della struttura del file creato (NON VUOTO)
+
+    assert "time" in results[0]
+    assert "text" in results[0]
+    assert "label" in results[0]
+    assert "score" in results[0]
+    assert results[0]["text"] == "prova"
+    assert results[0]["label"] == "neutral"
+    assert results[0]["score"] == 0.1
+
+
+def test_results_no_data(monkeypatch, tmp_path):
+
+    fake_path = tmp_path / fake_file
+    fake_path.touch()
+
+# salvo la funzione di lettura reale per evitare per poi sostituirla nel test
+
+    file_reader = csvfiles_manager.read_file
+
+# creazione della funzione per test con file vuoto
+
+    def fake_csv_reader_file():
+        return file_reader(fake_path)
+
+
+# passiamo con monkeypatch la funzione con il file vuoto invece che quello reale
+
+    monkeypatch.setattr(csvfiles_manager, "read_file", fake_csv_reader_file)
+    responde = client.get("/results")
+    assert responde.status_code == 200
+
+
+    assert responde.json() == []
+
