@@ -1,5 +1,7 @@
 name: CI
 
+# teoria di esecuzione. Sia in caso di Pull che Push
+
 on:
   push:
     branches:
@@ -10,23 +12,48 @@ on:
       - main
       - master
 
+# Creazione della prima job. Questo esegue i test con Pytest
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # carica test su macchina virtuale
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout repository 
+    # action che copia l'intera directoy sulla macchina virtuale
+        uses: actions/checkout@v4 
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+    # action che imposta la giusta versione di python
+        uses: actions/setup-python@v5 
         with:
           python-version: "3.11"
+    
+    # step che installa le dipendenze sulla macchina virtuale
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+    # step per l'avvio di pytest
+
       - name: Run tests
         run: python -m pytest test -q
+
+  # Questo job parte soltanto se il job "test" termina con successo.
+
+  docker-build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Ogni job usa un computer virtuale nuovo, quindi dobbiamo
+      # scaricare nuovamente il repository anche in questo job.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Costruiamo l'immagine per controllare che il Dockerfile sia valido.
+      # L'immagine resta nel computer temporaneo di GitHub e non viene pubblicata.
+      - name: Build Docker image
+        run: docker build -t company-sentiment:test .
