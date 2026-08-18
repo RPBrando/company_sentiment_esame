@@ -8,6 +8,8 @@ from src.api import app
 
 fake_file = Path("tmp_results.csv")
 
+# funzione fastapi per testare le API
+
 client = TestClient(app)
 
 
@@ -103,4 +105,17 @@ def test_results_no_data(monkeypatch, tmp_path):
 
 
     assert responde.json() == []
+
+# summary test
+
+def test_summary():
+
+    response = client.get("/summary")
+    result = response.json()
+    keys_list =["n. interaction", "sentiment count", "average score"]
+
+    assert response.status_code == 200
+    assert isinstance(result, dict)
+    assert result.keys == keys_list
+
 
