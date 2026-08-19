@@ -3,6 +3,8 @@ from pathlib import Path
 from src import csvfiles_manager
 from src import model
 from src.api import app
+from src import newdata_manager
+from src import metrics
 
 # test del client
 
@@ -112,10 +114,65 @@ def test_summary():
 
     response = client.get("/summary")
     result = response.json()
+
+# lista del controllo dell chiavi del dizionario
+
     keys_list =["n. interaction", "sentiment count", "average score"]
+
+    assert response.status_code == 200 
+    assert isinstance(result, dict)
+    assert list(result.keys()) == keys_list
+
+def test_getmodel_metrics():
+
+    keys_list = ["time","sample_size","metric_class","precision","recall","f1_score","support"]
+    response = client.get("/model-metrics")
+    result = response.json()
+
+    assert response.status_code == 200
+    assert isinstance(result[0], dict)
+    assert keys_list == list(result[0].keys())
+
+def test_postmodel_metrics(monkeypatch):
+
+    metrics_creator = metrics.metrics_creator
+
+# bisogna creare il file falso o inserire il save= False nel metodo
+    def fake_new_data(self, sample_size = None):
+        texts =["prova", "prova1", "prova2"]
+        targets = ["positive", "neutral", "negative"]
+        return texts, targets
+
+    def fake_prediction(texts, batch_size = 16):
+        return [
+            {"label": "positive", "score": 0.90},
+            {"label": "neutral", "score": 0.80},
+            {"label": "negative", "score": 0.95}
+        ]
+
+    def fake_metrics_creator(predictions, targets, sample_size=None):
+        return metrics_creator(
+            predictions,
+            targets,
+            save=False,
+            sample_size= sample_size
+            )
+
+    monkeypatch.setattr(newdata_manager.Dataset, "return_text_target", fake_new_data)
+    monkeypatch.setattr(model, "make_prediction", fake_prediction)
+    monkeypatch.setattr(metrics, "metrics_creator", fake_metrics_creator)
+
+    response = client.post("/model-metrics")
+
+    result = response.json()
 
     assert response.status_code == 200
     assert isinstance(result, dict)
-    assert result.keys == keys_list
+    
 
+
+
+    
+
+    
 
