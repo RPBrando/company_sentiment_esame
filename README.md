@@ -1,3 +1,9 @@
+---
+title: ProfAI Company Sentiment Analysis
+sdk: docker
+app_port: 8000
+---
+
 # company_sentiment
 
 [![CI](https://github.com/RPBrando/company_sentiment/actions/workflows/ci.yml/badge.svg)](https://github.com/RPBrando/company_sentiment/actions/workflows/ci.yml)

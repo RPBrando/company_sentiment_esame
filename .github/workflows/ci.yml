@@ -57,3 +57,34 @@ jobs:
       # L'immagine resta nel computer temporaneo di GitHub e non viene pubblicata.
       - name: Build Docker image
         run: docker build -t company-sentiment:test .
+  
+  deploy:
+    needs: docker-build
+  
+    # il deploy deve avvenire solo in caso di push sul main
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+    # connessione di GitHub a Hugging Face con action ufficiale
+
+      - name: Deploy to Hugging Face Space
+        uses: huggingface/hub-sync@v0.1.0
+        with: 
+          # repo presente su git hub
+          github_repo_id: ${{ github.repository }}
+          # indirizzo dello space di HF
+          huggingface_repo_id: The-rock93/profai_SA
+          # secret presente su git hub
+          hf_token: ${{ secrets.HF_TOKEN }}
+          # tipologia di spazio su HF
+          repo_type: space
+          space_sdk: docker
+
+      
+
+
