@@ -1,12 +1,21 @@
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import os
+
 
 BASEDIR = Path(__file__).resolve().parent
 PROJECTDIR = BASEDIR.parent
-FILEPATH = PROJECTDIR/"data"
+FILEPATH = Path(            # necessario per trasformare stringa in percorso
+             os.getenv(
+                "PERSISTENT_DATA_PATH", # variabile su Huggingface per i dati persistenti
+                str(PROJECTDIR/"data") # valore di default (quando si lavora in locale)
+                )
+        )
+
 RESULTPATH = FILEPATH / "results.csv"
 MODELCHECKFILE = FILEPATH / "modelsummary.csv"
+
 
 
 
