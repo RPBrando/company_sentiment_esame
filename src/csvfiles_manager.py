@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import datetime
 import os
 
-
+DATA_FORMATTING = "%Y-%m-%d %H:%M:%S"
 BASEDIR = Path(__file__).resolve().parent
 PROJECTDIR = BASEDIR.parent
 FILEPATH = Path(            # necessario per trasformare stringa in percorso
@@ -62,7 +62,7 @@ def write_file(df, result_path= RESULTPATH): # scrittura del file
 
 def prediction_saver(text, label, score, result_path = RESULTPATH):
         
-        time = datetime.now().strftime("%d-%m-%Y %H:%M:%S") # aggiunta del timestamp per andamento nel tempo
+        time = datetime.now().strftime(DATA_FORMATTING) # aggiunta del timestamp per andamento nel tempo
         
         df_prediction = pd.DataFrame([{     # creazione del df con la sola stringa della predizione
             "time": time,
@@ -128,7 +128,7 @@ def metrics_saver(metric_list, sample_size=None):
     })
 
     # Aggiungo il timestamp del report (utile per grafana sopratutto)
-    metric_df.insert(0, "time", datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
+    metric_df.insert(0, "time", datetime.now().strftime(DATA_FORMATTING))
 
     # Salvo anche il numero di righe usate nel test.
 
