@@ -78,7 +78,7 @@ def prediction_saver(text, label, score, result_path = RESULTPATH):
 def df_summary(): 
     df = read_file()
     return {
-         "n. interaction" : df.shape[0],
+         "n. interaction" : int(df.shape[0]),
          "sentiment count" : df["label"].value_counts().to_dict(),
          "average score" : float(df["score"].mean())
     }
