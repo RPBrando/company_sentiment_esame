@@ -35,6 +35,7 @@ def get_sentiment_pipeline(model_name = BASEMODEL_PATH):
                 sentiment_pipeline = pipeline(
                     "sentiment-analysis", 
                     model=source_model_path)
+                
                 sentiment_pipeline.save_pretrained(
                     new_model_path
                 )
@@ -83,6 +84,7 @@ def change_used_model(model_path):
             sentiment_pipeline = get_sentiment_pipeline(model_path)
 
     return sentiment_pipeline
+
 def make_prediction(text, batch_size=16, model_path = BASEMODEL_PATH):
     sentiment_pipeline = get_sentiment_pipeline(model_path)
 
