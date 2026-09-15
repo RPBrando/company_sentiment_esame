@@ -1,6 +1,7 @@
 from transformers import pipeline
 import os
 from pathlib import Path
+from src import newdata_manager
 
 source_model_path = f"cardiffnlp/twitter-roberta-base-sentiment-latest"
 
@@ -138,3 +139,10 @@ def load_saved_model(model_version = None):
         )
 
     return model_pipeline
+
+def train_model(model_name, dataset_name):
+    dataset = newdata_manager.Dataset(dataset_name)
+
+    X_train, X_test, y_train, y_test = dataset.return_training_data()
+
+    

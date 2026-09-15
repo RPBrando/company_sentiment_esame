@@ -1,5 +1,7 @@
 import pandas as pd
 from pathlib import Path
+import os
+from sklearn.model_selection import train_test_split
 
 # __file__ rappresenta il path di questo file Python.
 # Partendo da qui costruiamo path stabili, che non dipendono dalla cartella
@@ -7,7 +9,12 @@ from pathlib import Path
 BASEDIR = Path(__file__).resolve().parent
 PROJECTDIR = BASEDIR.parent
 DATAPATH = PROJECTDIR / "data"
-FOLDER_DFPATH = DATAPATH / "sentiment_datasets"
+FOLDER_DFPATH = Path(
+    os.getenv(
+        "HF_DATASET_PATH",
+        str(DATAPATH / "sentiment_datasets")
+    )
+)
 
 class Dataset:
 
@@ -20,6 +27,8 @@ class Dataset:
 
         self.df_path = FOLDER_DFPATH / filename
         self.encoding = encoding
+        self.text = None
+        self.target = None
     
     def return_text_target(self, sample_size=None):
         # Leggiamo il dataset grezzo
@@ -47,6 +56,32 @@ class Dataset:
 
         # Convertiamo le due colonne in liste di stringhe:
         # text andra' al modello, target andra' a classification_report.
-        text = raw_df["text"].map(str).tolist()
-        target = raw_df["sentiment"].map(str).tolist()
-        return text, target
+        self.text = raw_df["text"].map(str).tolist()
+        self.target = raw_df["sentiment"].map(str)
+
+        target_list = self.target.to_list()
+
+
+        return self.text, target_list
+
+    def return_training_data(self):
+        text, target = self.return_text_target()
+            
+        label_encoder = {
+        "positive": 2,
+        "neutral": 1,
+        "negative": 0
+        }
+
+        target_encoded = self.target.map(label_encoder).to_list()
+        text_train, text_test, target_train, target_test = train_test_split(
+            text, 
+            target_encoded, 
+            test_size= .2, 
+            random_state= 0, 
+            shuffle= True,
+            stratify=target_encoded
+            )
+
+        return text_train, text_test, target_train, target_test
+
