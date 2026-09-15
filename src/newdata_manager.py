@@ -65,7 +65,7 @@ class Dataset:
         return self.text, target_list
 
     def return_training_data(self):
-        text, target = self.return_text_target()
+        text, _ = self.return_text_target()
             
         label_encoder = {
         "positive": 2,
