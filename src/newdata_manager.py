@@ -3,6 +3,8 @@ from pathlib import Path
 import os
 from sklearn.model_selection import train_test_split
 
+
+
 # __file__ rappresenta il path di questo file Python.
 # Partendo da qui costruiamo path stabili, che non dipendono dalla cartella
 # da cui lanciamo il programma nel terminale.
@@ -64,9 +66,13 @@ class Dataset:
 
         return self.text, target_list
 
+
+    # Funzione per l'estrapolazione del testo e del target da un dataset
+    # e codifica del target
+
     def return_training_data(self):
         text, _ = self.return_text_target()
-            
+
         label_encoder = {
         "positive": 2,
         "neutral": 1,
@@ -75,7 +81,7 @@ class Dataset:
 
         target_encoded = self.target.map(label_encoder).to_list()
         text_train, text_test, target_train, target_test = train_test_split(
-            text, 
+            text,
             target_encoded, 
             test_size= .2, 
             random_state= 0, 
