@@ -70,8 +70,8 @@ class Dataset:
     # Funzione per l'estrapolazione del testo e del target da un dataset
     # e codifica del target
 
-    def return_training_data(self):
-        text, _ = self.return_text_target()
+    def return_training_data(self, sample_size = None):
+        text, _ = self.return_text_target(sample_size)
 
         label_encoder = {
         "positive": 2,

@@ -31,7 +31,7 @@ def test_newdata_manager():
     assert  len(x) == len(y)
 
 
-def fake_return_text_target():
+def fake_return_text_target(sample_size = None):
     fake_text = [
     "I love this product",
     "The service was excellent",

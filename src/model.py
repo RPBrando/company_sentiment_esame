@@ -1,8 +1,7 @@
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification, Trainer
 import os
 from pathlib import Path
 from src import newdata_manager
-from transformers import AutoTokenizer
 from datasets import Dataset as HFDataset # libreria HF per la creazione dei dataset direttamente nel formato corretto per il training
 
 
@@ -12,6 +11,7 @@ source_model_path = f"cardiffnlp/twitter-roberta-base-sentiment-latest"
 
 sentiment_pipeline = None
 loaded_model_name = None
+tokenizer = None
 
 BASEMODEL_NAME = "BaseModel"
 
@@ -145,34 +145,12 @@ def load_saved_model(model_version = None):
 
     return model_pipeline
 
-# funzioner per l'addestramento del modello - DA COMPLETARE
-
-def train_model(dataset_name, new_version_name,  model_trained = BASEMODEL_NAME):
-
-    dataset = newdata_manager.Dataset(dataset_name)
-
-    X_train, X_test, y_train, y_test = dataset.return_training_data()
-
-    X_train_tokenized = texts_tokenizer(X_train, model_trained)
-    X_test_tokenized = texts_tokenizer(X_test, model_trained)
-
-    X_train_tokenized["labels"] = y_train
-    train_dataset = HFDataset.from_dict(X_train_tokenized)
-
-    X_test_tokenized["labels"] = y_test
-    test_dataset = HFDataset.from_dict(X_test_tokenized)
-
-
-    return train_dataset, test_dataset
-
-
-
-
-# funzione per tokenizzare il testo di un dataset
+# funzione per la tokenizzazione dei testi
 
 def texts_tokenizer(texts, model_name = BASEMODEL_NAME):
 
     model_path = MODEL_PATH / model_name
+    global tokenizer
 
     # controllo se il modello scelto è funzionante
 
@@ -192,14 +170,88 @@ def texts_tokenizer(texts, model_name = BASEMODEL_NAME):
             print("Il modello inserito non è esistente")
             return None
 
-
-    
-
     encoded = tokenizer(
         texts,
         truncation = True,
         max_length = 512,
-        padding = False
+        padding = True
     
     )
     return encoded
+
+
+# funzioner per l'addestramento del modello
+
+def train_model(dataset_name, new_version_name, model_trained = BASEMODEL_NAME, sample_size = None):
+
+    metrics = {}
+    new_model_path = MODEL_PATH / new_version_name
+
+    dataset = newdata_manager.Dataset(dataset_name)
+
+    X_train, X_test, y_train, y_test = dataset.return_training_data(sample_size)
+
+# creazione dei testi tokenizzati già separati per train e test
+
+    X_train_tokenized = texts_tokenizer(X_train, model_trained)
+    X_test_tokenized = texts_tokenizer(X_test, model_trained)
+
+    global tokenizer
+
+# creazione dataset train e test con libreria datasets
+# rendiamo i dati pronti per il trainer
+
+    X_train_tokenized["labels"] = y_train
+    train_dataset = HFDataset.from_dict(X_train_tokenized)
+
+    X_test_tokenized["labels"] = y_test
+    test_dataset = HFDataset.from_dict(X_test_tokenized)
+
+# rendiamo il modello caricabile a Trainer
+
+    if model_trained == BASEMODEL_NAME:
+        traning_model = AutoModelForSequenceClassification.from_pretrained(
+            source_model_path
+        )
+    else:
+        traning_model = AutoModelForSequenceClassification.from_pretrained(
+            MODEL_PATH / model_trained
+        )
+
+# creazione del trainer + esecuzione    
+
+    trainer = Trainer(
+        model =traning_model,
+        train_dataset= train_dataset,
+        eval_dataset= test_dataset,
+    )
+
+    metrics["before training"] = trainer.evaluate(
+        metric_key_prefix= "before_training"
+    )
+
+    trainer.train()
+
+    metrics["after training"] = trainer.evaluate(
+        metric_key_prefix= "after_training"
+    )
+
+    trained_model = trainer.model
+
+# salvataggio del nuovo modello
+
+    trainer.save_model(new_model_path)
+    tokenizer.save_pretrained(new_model_path)
+    
+# controllo della corretta esistenza del salvataggio del nuovo modello
+
+    if new_model_path.exists():
+        if (new_model_path/"config.json").exists():
+            print("modello salvato correttamente")
+        else:
+            print("errore nel salvataggio del modello")
+    else:
+        print("errore nel salvataggio del modello")
+
+    return trained_model, metrics
+
