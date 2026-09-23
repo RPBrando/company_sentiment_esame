@@ -6,14 +6,19 @@ from datasets import Dataset as HFDataset # libreria HF per la creazione dei dat
 
 
 
-
+# origine del modello
 source_model_path = f"cardiffnlp/twitter-roberta-base-sentiment-latest"
 
+# variabili globali
 sentiment_pipeline = None
 loaded_model_name = None
 tokenizer = None
 
+# nome modello base
+
 BASEMODEL_NAME = "BaseModel"
+
+# percorsi utili
 
 BASEDIR = Path(__file__).resolve().parent
 PROJECTDIR = BASEDIR.parent
@@ -24,6 +29,7 @@ MODEL_PATH = Path(
     )
 )
 
+# recupero della pipeline per il modello scelto
 
 def get_sentiment_pipeline(model_name = BASEMODEL_NAME):
 
@@ -75,11 +81,14 @@ def get_sentiment_pipeline(model_name = BASEMODEL_NAME):
                 else:
                     sentiment_pipeline = load_saved_model(model_name)
                     loaded_model_name = model_name
+                    
     elif loaded_model_name != model_name:
-        sentiment_pipeline = change_used_model(model_name)
+        sentiment_pipeline = change_used_model(model_name)    
 
 
     return sentiment_pipeline
+
+# cambio del modello utilizzato
 
 def change_used_model(model_path):
     global sentiment_pipeline, loaded_model_name
@@ -133,8 +142,7 @@ def load_saved_model(model_version = None):
     if model_version is None:
         model_pipeline = pipeline(
             "sentiment-analysis",
-            model= MODEL_PATH,
-            tokenizer=MODEL_PATH
+            model= source_model_path,
         )
     else:
         model_pipeline = pipeline(
@@ -242,7 +250,7 @@ def train_model(dataset_name, new_version_name, model_trained = BASEMODEL_NAME, 
 
     trainer.save_model(new_model_path)
     tokenizer.save_pretrained(new_model_path)
-    
+
 # controllo della corretta esistenza del salvataggio del nuovo modello
 
     if new_model_path.exists():
