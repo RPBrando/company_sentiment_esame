@@ -1,8 +1,9 @@
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification, Trainer
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 import os
 from pathlib import Path
 from src import newdata_manager
 from datasets import Dataset as HFDataset # libreria HF per la creazione dei dataset direttamente nel formato corretto per il training
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
 
@@ -38,7 +39,6 @@ def get_sentiment_pipeline(model_name = BASEMODEL_NAME):
 # controllo che sia già stato importato il modello
 
     global sentiment_pipeline, loaded_model_name
-
 
     if sentiment_pipeline is None:
         if model_name == BASEMODEL_NAME:
@@ -188,6 +188,43 @@ def texts_tokenizer(texts, model_name = BASEMODEL_NAME):
     return encoded
 
 
+# definizione delle metriche di valutazione
+
+def compute_metrics(eval_prediction):
+
+# eval_prediction è una tupla che contiene due elementi:
+# i valori predetti dal modello (logits)
+# e i valori reali del dataset di test (labels)
+# questi valori vengono passati dal trainer di HF per calcolare le metriche 
+# di valutazione direttamente durante il training e la valutazione del modello
+
+    logits, labels = eval_prediction 
+
+# prende l'indice del valore massimo per ogni riga, 
+# che corrisponde alla classe predetta
+
+    predictions = logits.argmax(axis=-1) 
+
+# calcolo delle metriche di valutazione
+
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels,
+        predictions,
+        average="macro",
+        zero_division=0
+    )
+# calcolo dell'accuracy
+
+    accuracy = accuracy_score(labels, predictions)
+
+    return {
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1
+    }
+
+
 # funzioner per l'addestramento del modello
 
 def train_model(dataset_name, new_version_name, model_trained = BASEMODEL_NAME, sample_size = None):
@@ -226,19 +263,39 @@ def train_model(dataset_name, new_version_name, model_trained = BASEMODEL_NAME, 
             MODEL_PATH / model_trained
         )
 
-# creazione del trainer + esecuzione    
+# definizione dei parametri di training
+
+    arguments = TrainingArguments(
+        output_dir= str(MODEL_PATH / "training_arguments" / new_version_name),
+        num_train_epochs= 1,
+        per_device_train_batch_size= 8,
+        per_device_eval_batch_size= 8,
+        learning_rate= 2e-5,
+        save_strategy= "no",
+        report_to= "none"
+    )
+
+
+# creazione del trainer
 
     trainer = Trainer(
         model =traning_model,
         train_dataset= train_dataset,
         eval_dataset= test_dataset,
+        args= arguments,
+        compute_metrics= compute_metrics,
     )
+
+# valutazione del modello prima e dopo l'addestramento
 
     metrics["before training"] = trainer.evaluate(
         metric_key_prefix= "before_training"
     )
+# addestramento del modello
 
     trainer.train()
+
+# valutazione del modello dopo l'addestramento
 
     metrics["after training"] = trainer.evaluate(
         metric_key_prefix= "after_training"
@@ -251,7 +308,7 @@ def train_model(dataset_name, new_version_name, model_trained = BASEMODEL_NAME, 
     trainer.save_model(new_model_path)
     tokenizer.save_pretrained(new_model_path)
 
-# controllo della corretta esistenza del salvataggio del nuovo modello
+# controllo che il modello sia stato salvato correttamente
 
     if new_model_path.exists():
         if (new_model_path/"config.json").exists():
@@ -262,4 +319,3 @@ def train_model(dataset_name, new_version_name, model_trained = BASEMODEL_NAME, 
         print("errore nel salvataggio del modello")
 
     return trained_model, metrics
-
