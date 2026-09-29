@@ -30,13 +30,13 @@ def read_file(file_path= RESULTPATH): # funzione per leggere file - controllo de
 
     except FileNotFoundError:
         df = pd.DataFrame(
-            columns=["time", "text", "label", "score"]
+            columns=["time", "text", "label", "score", "model_name"]
         )
         write_file(df, file_path)
 
     except pd.errors.EmptyDataError:
         df = pd.DataFrame(
-                columns=["time", "text", "label", "score"]
+                columns=["time", "text", "label", "score", "model_name"]
         )
         write_file(df, file_path)
 

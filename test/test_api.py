@@ -56,7 +56,8 @@ def test_results_data(monkeypatch, tmp_path):
         "prova",
         "neutral",
         0.1,
-        fake_path
+        fake_path,
+        model_name="Versione1"
         )
 
     def fake_reader_file ():
@@ -148,7 +149,7 @@ def test_postmodel_metrics(monkeypatch):
             {"label": "positive", "score": 0.90},
             {"label": "neutral", "score": 0.80},
             {"label": "negative", "score": 0.95}
-        ]
+        ], "Versione1"
 
     def fake_metrics_creator(predictions, targets, sample_size=None):
         return metrics_creator(
