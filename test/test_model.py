@@ -19,4 +19,7 @@ def test_model_pipeline(monkeypatch):
     model.save_model("Versione1")
 
     assert fake_pipeline.saved_path == model.MODEL_PATH / "Versione1"
+
+def test_train_model(monkeypatch):
+    
     

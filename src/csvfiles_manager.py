@@ -60,7 +60,7 @@ def write_file(df, result_path= RESULTPATH): # scrittura del file
 
 # SALVATAGGIO DELLE PREDIZIONI
 
-def prediction_saver(text, label, score, result_path = RESULTPATH):
+def prediction_saver(text, label, score, result_path = RESULTPATH, model_name = None): # funzione per salvare le predizioni in un file csv
         
         time = datetime.now().strftime(DATA_FORMATTING) # aggiunta del timestamp per andamento nel tempo
         
@@ -68,7 +68,8 @@ def prediction_saver(text, label, score, result_path = RESULTPATH):
             "time": time,
             "text": text,
             "label": label,
-            "score": score
+            "score": score,
+            "model_name": model_name
         }])
         df_total = df_merge(df_prediction, result_path)  # creazione df con nuovo e già presenti in csv
         write_file(df_total, result_path)                # scrittura su file

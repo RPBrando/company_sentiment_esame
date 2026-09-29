@@ -73,7 +73,7 @@ jobs:
     # connessione di GitHub a Hugging Face con action ufficiale
 
       - name: Deploy to Hugging Face Space
-        uses: huggingface/hub-sync@v0.1.0
+        uses: huggingface/hub-sync@v0.3.0
         with: 
           # repo presente su git hub
           github_repo_id: ${{ github.repository }}

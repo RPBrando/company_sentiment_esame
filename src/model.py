@@ -113,7 +113,7 @@ def make_prediction(text, batch_size=16, model_path = BASEMODEL_NAME):
         # truncation=True li taglia alla lunghezza massima supportata dal modello.
         truncation=True,
         max_length=512
-    )
+    ), loaded_model_name
 
 def save_model(model_version = BASEMODEL_NAME):
     """

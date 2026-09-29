@@ -41,14 +41,15 @@ async def predicton(text: schema.Text):
 
 # validazione del testo di input (** dizionario spacchettato)
 
-        predict = schema.Prediction(**prediction_raw[0]) 
+        predict, model_name = schema.Prediction(**prediction_raw[0]) 
          
 # creazione del df con la sola stringa della predizione
 
         csvfiles_manager.prediction_saver(        
                testo,
                predict.label,
-               predict.score
+               predict.score,
+               model_name=model_name
         )    
         
         return predict  
