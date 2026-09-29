@@ -27,6 +27,10 @@ def read_file(file_path= RESULTPATH): # funzione per leggere file - controllo de
     try:
         with open(file_path, "r") as file:
             df = pd.read_csv(file)
+            if "model_name" not in df.columns:
+                df["model_name"] = "unknown"
+            else:
+                df["model_name"] = df["model_name"].fillna("unknown")
 
     except FileNotFoundError:
         df = pd.DataFrame(

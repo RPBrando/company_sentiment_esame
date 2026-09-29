@@ -30,4 +30,10 @@ def test_read_file():
 
     df = csv.read_file()
     assert isinstance(df, pd.DataFrame)
+    assert "time" in df.columns
+    assert "text" in df.columns
+    assert "label" in df.columns
+    assert "score" in df.columns
+    assert "model_name" in df.columns
+    
 
