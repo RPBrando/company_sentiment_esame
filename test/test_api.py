@@ -19,11 +19,11 @@ def test_predict(monkeypatch):
     # Nei test non vogliamo caricare davvero il modello Hugging Face.
     # Creiamo quindi una risposta finta ma con la stessa forma della risposta reale.
     def fake_prediction(text):
-        return [{"label": "neutral", "score": 0.90}]
+        return [{"label": "neutral", "score": 0.90}], "Versione1"
 
     # Nei test non vogliamo scrivere davvero dentro data/results.csv.
     # Sostituiamo temporaneamente il salvataggio con una funzione vuota.
-    def fake_prediction_saver(text, label, score):
+    def fake_prediction_saver(text, label, score, model_name=None):
         pass
 
 # Uso del metodo monkeypatch di pytest per sostituire momentaneamente il modello con attributi creati in precedenza
