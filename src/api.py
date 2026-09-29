@@ -37,11 +37,11 @@ async def predicton(text: schema.Text):
 
 # esecuzione della predizione del testo in input "grezza"
 
-        prediction_raw = model.make_prediction(testo)     
+        prediction_raw, model_name = model.make_prediction(testo)     
 
 # validazione del testo di input (** dizionario spacchettato)
 
-        predict, model_name = schema.Prediction(**prediction_raw[0]) 
+        predict = schema.Prediction(**prediction_raw[0]) 
          
 # creazione del df con la sola stringa della predizione
 
