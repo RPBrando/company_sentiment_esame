@@ -1,7 +1,7 @@
 from sklearn.metrics import classification_report
 from src import csvfiles_manager
 
-def metrics_creator(prediction, target, save = True, sample_size=None):
+def metrics_creator(prediction, target, save = True, sample_size=None, model_name=None):
 
     """
     prediction = -> predizione
@@ -17,8 +17,9 @@ def metrics_creator(prediction, target, save = True, sample_size=None):
         output_dict=True,
         zero_division=0
     )
+    
 
     # Salvo il report su CSV insieme al sample_size usato per il test.
     if save == True:
-        csvfiles_manager.metrics_saver(metric_report, sample_size=sample_size)
+        csvfiles_manager.metrics_saver(metric_report, sample_size=sample_size, model_name=model_name)
     return metric_report

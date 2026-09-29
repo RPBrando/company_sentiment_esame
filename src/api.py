@@ -70,7 +70,7 @@ async def dataset_prediction(sample_size: int = 50):
 
     # Il modello puo' ricevere una lista di testi e restituisce una lista di dizionari, uno per ogni testo: {"label": ..., "score": ...}.
 
-    prediction_raw = model.make_prediction(texts, batch_size=16)
+    prediction_raw, model_name = model.make_prediction(texts, batch_size=16)
 
     # Ogni output grezzo viene validato con Pydantic.
     # Alla fine teniamo solo la label predetta, per confrontarla con targets.

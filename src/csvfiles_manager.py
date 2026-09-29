@@ -107,7 +107,7 @@ def metrics_reader():
     return read_results
 
 
-def metrics_saver(metric_list, sample_size=None):
+def metrics_saver(metric_list, sample_size=None, model_name=None):
 
     """
     metrics.metric_report(output_dict=True) restituisce un dizionario annidato
@@ -118,6 +118,7 @@ def metrics_saver(metric_list, sample_size=None):
 
     FILEPATH.mkdir(parents=True, exist_ok=True)
 
+# creazione del df con le metriche
 
     metric_df = pd.DataFrame(metric_list).transpose()
 
@@ -134,6 +135,10 @@ def metrics_saver(metric_list, sample_size=None):
     # Salvo anche il numero di righe usate nel test.
 
     metric_df.insert(1, "sample_size", sample_size)
+
+    # Aggiungo il nome del modello al dataframe
+    if model_name is not None:
+        metric_df.insert(2, "model_name", model_name)
 
     try:
         # Se esiste gia' uno storico metriche, lo leggo e aggiungo il nuovo report.
