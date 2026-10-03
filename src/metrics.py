@@ -1,5 +1,6 @@
 from sklearn.metrics import classification_report
 from src import csvfiles_manager
+from src.model import loaded_model_name
 
 def metrics_creator(prediction, target, save = True, sample_size=None, model_name=None):
 

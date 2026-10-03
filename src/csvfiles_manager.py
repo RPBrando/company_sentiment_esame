@@ -15,6 +15,7 @@ FILEPATH = Path(            # necessario per trasformare stringa in percorso
 
 RESULTPATH = FILEPATH / "results.csv"
 MODELCHECKFILE = FILEPATH / "modelsummary.csv"
+MODELTRAININGFILE_COMPARE = FILEPATH / "modeltrainingcomparison.csv"
 
 
 
@@ -140,6 +141,8 @@ def metrics_saver(metric_list, sample_size=None, model_name=None):
 
     metric_df.insert(1, "sample_size", sample_size)
 
+    # salvo il nome del modello usato per il test. Se non viene passato, salvo il nome del modello caricato di default.
+    
     # Aggiungo il nome del modello al dataframe
     if model_name is not None:
         metric_df.insert(2, "model_name", model_name)
@@ -157,3 +160,72 @@ def metrics_saver(metric_list, sample_size=None, model_name=None):
         pass
 
     metric_df.to_csv(MODELCHECKFILE, index=False)
+
+def metrics_before_after(metrics,model_training_name, model_trained_name):
+    """"
+    Questa funzione prende il risultato delle metrice prima e dopo dell'addestramento
+    e lo salva in un file csv per poterlo visualizzare in grafana.
+    """
+
+    # creazione del dizionario per salvare i dati da scrivere nel file csv
+
+    compare_data = {}
+
+    # creazione del dataframe con le metriche prima e dopo l'addestramento
+
+    compare_data[model_training_name] = metrics["before training"]
+    compare_data[model_trained_name] = metrics["after training"]
+
+
+    # funzione interna per rimuovere la chiave dalle metriche
+
+
+    def remove_key(keyToRemove, dictToClean):
+        """
+        Funzione per rimuovere una chiave da un dizionario annidato.
+        """
+
+        tmp_dict = {}
+
+        # ciclo per rimuovere la chiave dal dizionario annidato
+
+        for key, value in dictToClean.items():
+                key = key.removeprefix(keyToRemove)
+                tmp_dict[key] = value
+
+        return tmp_dict
+
+   # standardizzazione dei nomi delle metriche per uniformità e leggibilità nel file di
+   # confronto tra le metriche prima e dopo l'addestramento
+ 
+    
+
+    compare_data[model_training_name]=remove_key("before_training_", compare_data[model_training_name])
+    compare_data[model_trained_name]=remove_key("after_training_", compare_data[model_trained_name])
+
+    compare_df = pd.DataFrame(compare_data).transpose()
+
+# Porto l'indice dentro una colonna normale per facilità di lettura e comodità in dashboard
+    
+    compare_df = compare_df.reset_index().rename(columns={
+        "index": "model name"
+    })
+
+    # scrittura del file csv con le metriche prima e dopo l'addestramento
+
+    try:
+        # Se esiste gia' uno storico metriche, lo leggo e aggiungo il nuovo report.
+        
+        old_metric_df = pd.read_csv(MODELTRAININGFILE_COMPARE)
+        compare_df = pd.concat([old_metric_df, compare_df], ignore_index=True)
+    except FileNotFoundError:
+        # Se il file non esiste ancora, il report corrente sara' il primo storico.
+        pass
+    except pd.errors.EmptyDataError:
+        # Se il file esiste ma e' vuoto, ripartiamo dal report corrente.
+        pass
+
+    write_file(compare_df, MODELTRAININGFILE_COMPARE)
+
+
+

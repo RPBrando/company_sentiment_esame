@@ -4,6 +4,7 @@ from pathlib import Path
 from src import newdata_manager
 from datasets import Dataset as HFDataset # libreria HF per la creazione dei dataset direttamente nel formato corretto per il training
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from src import csvfiles_manager
 
 
 
@@ -313,6 +314,7 @@ def train_model(dataset_name, new_version_name, model_trained = BASEMODEL_NAME, 
     if new_model_path.exists():
         if (new_model_path/"config.json").exists():
             print("modello salvato correttamente")
+            csvfiles_manager.metrics_before_after(metrics, model_trained, new_version_name)
         else:
             print("errore nel salvataggio del modello")
     else:

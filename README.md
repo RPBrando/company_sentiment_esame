@@ -4,149 +4,171 @@ sdk: docker
 app_port: 8000
 ---
 
-# company_sentiment
+# Company Sentiment Analysis
 
 [![CI](https://github.com/RPBrando/company_sentiment/actions/workflows/ci.yml/badge.svg)](https://github.com/RPBrando/company_sentiment/actions/workflows/ci.yml)
 
-## Obiettivo del progetto
+Progetto MLOps per analizzare il sentiment di testi provenienti dai social media, conservare lo storico delle predizioni, valutare le prestazioni del modello e monitorarne l'andamento nel tempo.
 
-Controllare l'andamento del sentiment aziendale online. Creare pipeline di CI/CD in modo 
-da garantire qualità in tutte le fasi di sviluppo e deployment.
-Controllare in modo costante, con implementazione di DB esterni:
-- andamento delle performance del modello utilizzato
-- valutazione della necessità di eventuale apprendimento
+Il modello di partenza e [`cardiffnlp/twitter-roberta-base-sentiment-latest`](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest), capace di classificare un testo come `positive`, `neutral` o `negative`.
 
-Creazione futura di metodi di auto-apprendimento.
+## Funzionalita
 
-## Funzionalità principali
-- Analisi sentiment su testo singolo
-- Salvataggio storico predizioni
-- Lettura dataset pubblico
-- Valutazione modello
-- Salvataggio metriche nel tempo
+- predizione del sentiment tramite API FastAPI;
+- salvataggio di testo, label, confidence, timestamp e modello utilizzato;
+- valutazione del modello su un dataset pubblico;
+- calcolo di accuracy, precision, recall e F1-score;
+- salvataggio dello storico delle metriche;
+- gestione di modelli salvati e versionati;
+- preparazione, tokenizzazione e suddivisione train/test dei dati;
+- implementazione del fine-tuning tramite Hugging Face `Trainer`;
+- test automatici con Pytest;
+- build automatica dell'immagine Docker;
+- deploy automatico su Hugging Face Spaces;
+- persistenza dei dati tramite Storage Bucket;
+- dashboard di monitoraggio su Grafana Cloud.
 
-## Architettura del progetto
-- api.py:
-    Contenitore di tutti gli endpoint presenti nel progetto.
-    Qui sono presenti metodi per leggere/scrivere metriche e analisi sentiment effettuate.
-- model.py:
-    Contenitore del modello e del metodo di predizione.
-- schema.py:
-    Contenitore delle classi Pydantic per il controllo della struttura dei dati.
-- csvfiles_manager.py:
-    Gestore dei file CSV generati dal progetto (predizioni e metriche).
-- newdata_manager.py:
-    Gestore dei dataset passati per capire se le metriche del modello sono ancora efficienti.
-    La gestione del dataset deve essere fatta in precedenza, in quanto il modello accetta solo "text" e "sentiment" come colonne di input.
-- metrics.py:
-    Gestore delle metriche del progetto. Qui ci sono i metodi e le librerie utili per la valutazione del modello.
+## Architettura
 
+```text
+src/
+|-- api.py                 Endpoint FastAPI
+|-- model.py               Caricamento, predizione e training del modello
+|-- newdata_manager.py     Preparazione del dataset e split train/test
+|-- metrics.py             Calcolo delle metriche
+|-- csvfiles_manager.py    Lettura e scrittura degli storici CSV
+`-- schema.py              Modelli Pydantic
 
-
-## Modello utilizzato
-Modello "Twitter-roBERTa-base for Sentiment Analysis" recuperato su Hugging Face, con risultati accettabili e in lingua inglese per essere utilizzato a livello globale.
-
-## Endpoint API
-- POST /predict
-- GET /results
-- GET /summary
-- POST /model-metrics
-- GET /model-metrics
-
-## Dataset
-I dataset utilizzati devono avere una struttura ben precisa:
-- "text" : testo da valutare
-- "sentiment" : valutazione del testo
-
-
-## Metriche di valutazione del modello
-
-Per valutare le prestazioni del modello sono state utilizzate le seguenti metriche:
-
-### Accuracy
-
-L’**accuracy** indica quante previsioni totali il modello ha classificato correttamente.
-
-Esempio:
-se il modello fa 100 previsioni e ne indovina 90, l’accuracy è pari al 90%.
-
----
-
-### Precision
-
-La **precision** indica quanto sono affidabili le previsioni positive del modello.
-
-Esempio:
-se il modello predice 10 recensioni come positive, ma solo 8 lo sono davvero, la precision è 80%.
-
----
-
-### Recall
-
-La **recall** indica quanti elementi positivi reali il modello riesce a trovare.
-
-Esempio:
-se ci sono 10 recensioni positive reali e il modello ne trova 7, la recall è 70%.
-
----
-
-### F1-score
-
-L’**F1-score** combina precision e recall in un unico valore.
-
-È utile quando si vuole valutare il modello considerando sia:
-
-* quanto sono corrette le previsioni positive;
-* quanti casi positivi reali vengono trovati.
-
-Un F1-score alto indica che il modello riesce sia a fare previsioni precise, sia a non perdere troppi casi importanti.
-
-
-## Come avviare il progetto
-Per avviare il progetto serve il seguente codice:
-
-Importare tutte le librerie necessarie con requirements.txt
-
-Da cartella del progetto:
-```bash
-pip install -r requirements.txt
-uvicorn src/api:app --reload
+test/                      Test automatici
+.github/workflows/ci.yml   Pipeline CI/CD
+Dockerfile                 Immagine dell'applicazione
 ```
 
-Una volta avviato il file contenente le API, è possibile avviare anche client.py per testare un singolo sentiment. Per quanto riguarda il controllo del test su dataset di grandi dimensioni, avviare client_test.py e caricare un dataset in data/sentiment_datasets.
+## API
 
-## Avvio con Docker
+| Metodo | Endpoint | Descrizione |
+|---|---|---|
+| `POST` | `/predict` | Analizza un testo e salva il risultato |
+| `GET` | `/results` | Restituisce lo storico delle predizioni |
+| `GET` | `/summary` | Restituisce il riepilogo dei sentiment |
+| `POST` | `/model-metrics` | Valuta il modello su un campione del dataset |
+| `GET` | `/model-metrics` | Restituisce lo storico delle metriche |
+| `GET` | `/docs` | Documentazione OpenAPI interattiva |
 
-Il progetto può essere avviato anche tramite Docker, senza dover configurare manualmente l'ambiente Python locale.
+Esempio di richiesta:
 
-### Build dell'immagine
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"sentiment": "This company provides an excellent service"}'
+```
 
-Dalla cartella principale del progetto:
+## Dataset
+
+Il dataset deve essere un file CSV contenente almeno queste colonne:
+
+| Colonna | Contenuto |
+|---|---|
+| `text` | Testo da analizzare |
+| `sentiment` | Label reale: positive, neutral o negative |
+
+Prima del training vengono eseguiti:
+
+1. rimozione dei valori mancanti e dei testi vuoti;
+2. conversione delle label in valori numerici;
+3. suddivisione stratificata in training set e test set;
+4. tokenizzazione con il tokenizer associato al modello.
+
+## Metriche
+
+- **Accuracy**: percentuale complessiva di classificazioni corrette.
+- **Precision**: affidabilita delle classificazioni prodotte dal modello.
+- **Recall**: capacita di trovare gli elementi appartenenti a una classe.
+- **F1-score**: media armonica di precision e recall.
+
+Il progetto conserva le metriche nel tempo per confrontare il modello base con le versioni addestrate.
+
+## Avvio locale
+
+Il progetto utilizza Python 3.11.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn src.api:app --reload
+```
+
+L'API sara disponibile su `http://127.0.0.1:8000` e la documentazione automatica su `http://127.0.0.1:8000/docs`.
+
+## Test
+
+```bash
+python -m pytest test -q
+```
+
+I test utilizzano fake e `monkeypatch` per verificare API e logica applicativa senza scaricare o addestrare realmente il modello durante la CI.
+
+## Docker
+
+Build dell'immagine:
 
 ```bash
 docker build -t company-sentiment .
+```
 
-### Avvio del container
+Avvio del container:
 
+```bash
 docker run --rm -p 8000:8000 company-sentiment
+```
 
-L'api sarà disponibile su: http://127.0.0.1:8000
+## Persistenza
 
-Per la documentazione automatica andare su: http://127.0.0.1:8000/docs
+In locale i file vengono salvati nelle cartelle del progetto. Nel deploy i percorsi possono essere configurati tramite variabili d'ambiente:
 
+| Variabile | Utilizzo |
+|---|---|
+| `PERSISTENT_DATA_PATH` | Storico delle predizioni e delle metriche |
+| `HF_DATASET_PATH` | Dataset utilizzati per valutazione e training |
+| `HF_MODEL_PATH` | Modelli salvati e versionati |
 
-## Stato attuale
+Su Hugging Face Spaces queste variabili puntano allo Storage Bucket montato, evitando la perdita dei dati dopo un riavvio del container.
 
-Progetto testato e correttamente funzionante per:
-predizione del singolo sentiment, controllo delle metriche, salvataggio dello storico in file CSV sia della predizione che delle metriche.
-Avviato anche progetto per il deploy. Creato Dockerfile e testato creando immagine e container.
+## CI/CD
 
+La pipeline GitHub Actions esegue in sequenza:
 
+1. installazione delle dipendenze e test Pytest;
+2. build dell'immagine Docker;
+3. deploy su Hugging Face Spaces, soltanto dopo un push sul branch principale e se i passaggi precedenti terminano correttamente.
 
-## Sviluppi futuri
-- Dashboard
-- Grafana
-- CD
-- Deploy
-- Retraining/fine-tuning
-- Auto-apprendimento da sentiment ricevuti
+Applicazione online: [Hugging Face Space](https://the-rock93-profai-sa.hf.space/)
+
+Documentazione API online: [Swagger UI](https://the-rock93-profai-sa.hf.space/docs)
+
+## Monitoraggio
+
+Grafana Cloud legge i dati esposti dall'API tramite il datasource Infinity. La dashboard mostra lo storico delle metriche del modello e la distribuzione del sentiment rilevato.
+
+[Apri la dashboard pubblica](https://rpbrando.grafana.net/public-dashboards/0a02fb40a7ba4216b5adaa8f11983783)
+
+## Stato del progetto
+
+Sono completati il servizio di predizione, la valutazione, i test, la containerizzazione, il deploy, la persistenza e il monitoraggio.
+
+La funzione di fine-tuning e gia implementata e comprende valutazione prima e dopo il training e salvataggio della nuova versione. Prima della consegna restano da completare:
+
+- prova completa del training su un campione ridotto e successivamente sul dataset scelto;
+- confronto dei modelli sullo stesso test set;
+- regola di approvazione e attivazione del modello migliore;
+- automazione del retraining;
+- notebook Google Colab finale con spiegazione dei risultati e link al repository.
+
+## Scelte progettuali
+
+- Il modello base viene recuperato da Hugging Face e salvato localmente al primo utilizzo.
+- Ogni predizione registra il nome del modello che l'ha prodotta.
+- I dati persistenti sono separati dall'immagine Docker.
+- Un nuovo modello deve essere valutato prima di sostituire quello attivo.
+- Training e test utilizzano insiemi distinti per evitare data leakage.
