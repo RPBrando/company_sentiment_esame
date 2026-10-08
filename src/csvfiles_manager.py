@@ -47,6 +47,34 @@ def read_file(file_path= RESULTPATH): # funzione per leggere file - controllo de
 
     return df
 
+# funzione per la lettura del file di metriche, con controllo dell'esistenza del 
+# file e gestione dei casi di file vuoto o inesistente.
+
+def read_file_metrics(file_path= MODELTRAININGFILE_COMPARE): # funzione per leggere file - controllo dell'esistenza del file
+
+   
+    try:
+        with open(file_path, "r") as file:
+            df = pd.read_csv(file)
+            if "model_name" not in df.columns:
+                df["model_name"] = "unknown"
+            else:
+                df["model_name"] = df["model_name"].fillna("unknown")
+
+    except FileNotFoundError:
+        df = pd.DataFrame(
+            columns=["model_name", "loss", "accuracy", "precision", "recall", "f1"]
+        )
+        write_file(df, file_path)
+
+    except pd.errors.EmptyDataError:
+        df = pd.DataFrame(
+            columns=["model_name", "loss", "accuracy", "precision", "recall", "f1"]
+        )
+        write_file(df, file_path)
+
+    return df
+
 # UNIONE DEL DF PRESENTE SUL FILE E DI QUELLO PREDETTO
 
 def df_merge(df_predict, result_path = RESULTPATH):
@@ -197,18 +225,18 @@ def metrics_before_after(metrics,model_training_name, model_trained_name):
 
    # standardizzazione dei nomi delle metriche per uniformità e leggibilità nel file di
    # confronto tra le metriche prima e dopo l'addestramento
- 
-    
 
-    compare_data[model_training_name]=remove_key("before_training_", compare_data[model_training_name])
-    compare_data[model_trained_name]=remove_key("after_training_", compare_data[model_trained_name])
+    compare_data[model_training_name]=remove_key("before_training_", compare_data[model_training_name]) # metriche pre training
+    compare_data[model_trained_name]=remove_key("after_training_", compare_data[model_trained_name]) # metriche post training
+
+    # creazione del dataframe con le metriche prima e dopo l'addestramento
 
     compare_df = pd.DataFrame(compare_data).transpose()
 
-# Porto l'indice dentro una colonna normale per facilità di lettura e comodità in dashboard
+    # Porto l'indice dentro una colonna normale per facilità di lettura e comodità in dashboard
     
     compare_df = compare_df.reset_index().rename(columns={
-        "index": "model name"
+        "index": "model_name"
     })
 
     # scrittura del file csv con le metriche prima e dopo l'addestramento
@@ -218,6 +246,7 @@ def metrics_before_after(metrics,model_training_name, model_trained_name):
         
         old_metric_df = pd.read_csv(MODELTRAININGFILE_COMPARE)
         compare_df = pd.concat([old_metric_df, compare_df], ignore_index=True)
+
     except FileNotFoundError:
         # Se il file non esiste ancora, il report corrente sara' il primo storico.
         pass

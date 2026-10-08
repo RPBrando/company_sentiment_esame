@@ -5,16 +5,29 @@ from src import newdata_manager
 from datasets import Dataset as HFDataset # libreria HF per la creazione dei dataset direttamente nel formato corretto per il training
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from src import csvfiles_manager
+import pandas as pd
 
 
 
 # origine del modello
 source_model_path = f"cardiffnlp/twitter-roberta-base-sentiment-latest"
 
+# variabile globale per il file di trigger per il retraining automatico del modello
+trigger_file_path = (
+    csvfiles_manager.FILEPATH
+    / "retrain_triggered"
+    / "trigger.txt"
+)
+trigger_file_path.parent.mkdir(parents=True, exist_ok=True)
+
 # variabili globali
 sentiment_pipeline = None
 loaded_model_name = None
 tokenizer = None
+best_model_name = None
+retrain_model = False
+low_confidence_predictions = 0
+predictions_total = 0
 
 # nome modello base
 
@@ -91,30 +104,60 @@ def get_sentiment_pipeline(model_name = BASEMODEL_NAME):
 
 # cambio del modello utilizzato
 
-def change_used_model(model_path):
+def change_used_model(model_name):
     global sentiment_pipeline, loaded_model_name
     
     if sentiment_pipeline is not None:
-        if loaded_model_name != model_path:
+        if loaded_model_name != model_name:
             sentiment_pipeline = None
-            sentiment_pipeline = get_sentiment_pipeline(model_path)
+            sentiment_pipeline = get_sentiment_pipeline(model_name)
+    else:
+        sentiment_pipeline = get_sentiment_pipeline(model_name)
 
     return sentiment_pipeline
 
-def make_prediction(text, batch_size=16, model_path = BASEMODEL_NAME):
-    sentiment_pipeline = get_sentiment_pipeline(model_path)
+
+# funzione per fare le predizioni con il modello scelto
+ 
+
+def make_prediction(text, batch_size=16, base_model= BASEMODEL_NAME):
+    
+    global best_model_name, sentiment_pipeline, loaded_model_name, low_confidence_predictions, predictions_total
+
+    if best_model_name is not None:
+        sentiment_pipeline = get_sentiment_pipeline(best_model_name)
+    else:
+        best_model_choicer()
+
+        if best_model_name is None:
+            sentiment_pipeline = get_sentiment_pipeline(base_model)
+        elif best_model_name != base_model:
+            sentiment_pipeline = get_sentiment_pipeline(best_model_name)
 
     # text puo' essere una singola stringa oppure una lista di stringhe.
     # batch_size divide le liste grandi in blocchi piu' piccoli, cosi'
     # il modello non prova a processare troppi testi tutti insieme.
-    return sentiment_pipeline(
+
+    predictions = sentiment_pipeline(
         text,
         batch_size=batch_size,
-        # Alcuni testi del dataset possono essere lunghi.
-        # truncation=True li taglia alla lunghezza massima supportata dal modello.
         truncation=True,
         max_length=512
-    ), loaded_model_name
+    )
+
+    # contiamo le volte che una predizione è stata poco sicura, 
+    # cioè con un punteggio inferiore a 0.6.
+    
+
+    for prediction in predictions:
+        predictions_total += 1
+        if prediction["score"] < 0.6:
+            global low_confidence_predictions
+            low_confidence_predictions += 1
+
+    trigger_retraining_file_generator()
+
+    return predictions, loaded_model_name
 
 def save_model(model_version = BASEMODEL_NAME):
     """
@@ -315,9 +358,137 @@ def train_model(dataset_name, new_version_name, model_trained = BASEMODEL_NAME, 
         if (new_model_path/"config.json").exists():
             print("modello salvato correttamente")
             csvfiles_manager.metrics_before_after(metrics, model_trained, new_version_name)
+            global best_model_name
+            best_model_choicer()
+
+            print(f"Il modello migliore è: {best_model_name}")
         else:
             print("errore nel salvataggio del modello")
     else:
         print("errore nel salvataggio del modello")
 
     return trained_model, metrics
+
+# def best_model_choicer() deve prendere in input le metriche di valutazione del modello e restituire il modello migliore da utilizzare per le predizioni.
+# facciamo in modo che ci sia l'F1 score come metrica principale per la scelta del modello migliore. In caso di parità, 
+# si può considerare l'accuracy come metrica secondaria.
+
+
+def best_model_choicer():
+    """
+    Questa funzione parte in automatico ogni volta che un modello viene addestrato con nuovi dati
+    e confronta tutti i modelli presenti nel file della valutazioe e ne sceglie 
+    il migliore. In caso di parità, si può considerare l'accuracy come metrica secondaria.
+    """
+
+    global best_model_name
+
+    # leggo il file delle metriche e lo ordino per F1 score e accuracy per 
+    # portare in cima il modello migliore
+
+    try:
+        metric_df = csvfiles_manager.read_file_metrics()
+        if metric_df.empty:
+            print("Non sono presenti metriche per scegliere il modello.")
+            return None
+        else:
+            metric_df = metric_df.sort_values(
+                by=["f1", "accuracy"],
+                ascending=False
+            )
+            best_model_name = metric_df.iloc[0]["model_name"]
+
+            global sentiment_pipeline
+            sentiment_pipeline = change_used_model(best_model_name)
+            print(f"Il modello migliore è: {best_model_name}")
+
+            return best_model_name
+
+    except FileNotFoundError:
+        print("Il file delle metriche non esiste. Non è possibile scegliere il modello migliore.")
+        return None
+    except pd.errors.EmptyDataError:
+        print("Il file delle metriche è vuoto. Non è possibile scegliere il modello migliore.")
+        return None
+
+def auto_retraining(current_model_name, dataset_name):
+    """
+    Questa funzione viene chiamata quando il modello corrente non è più affidabile
+    e deve essere addestrato nuovamente con nuovi dati. 
+    """
+    new_version_name = f"{current_model_name}_retrained"
+    print(f"Avvio del retraining del modello {current_model_name} con il dataset {dataset_name}.")
+    train_model(dataset_name, new_version_name, model_trained=current_model_name)
+    best_model = best_model_choicer()
+
+    if best_model == new_version_name:
+        reset_retraining_trigger()
+        global low_confidence_predictions, predictions_total
+
+        low_confidence_predictions = 0
+        predictions_total = 0
+
+        print(f"Retraining completato. Il nuovo modello è stato salvato come {new_version_name}.")
+    else:
+        print("retraining automatico concluso ma modello ancora non soddisfacente")
+
+def trigger_retraining_file_generator():
+    """
+    Questa funzione crea un file di trigger per l'addestramento automatico del modello.
+    """
+    trigger_file_path.parent.mkdir(parents=True, exist_ok=True)
+    if check_confidence_score():
+        with open(trigger_file_path, "w") as f:
+            f.write("True")
+
+def reset_retraining_trigger():
+    """
+    Questa funzione resetta il file di trigger per l'addestramento automatico del modello.
+    """
+    global low_confidence_predictions, predictions_total
+    low_confidence_predictions = 0
+    predictions_total = 0
+
+    if trigger_file_path.exists():
+        with open(trigger_file_path, "w") as f:
+            f.write("False")
+
+def check_retraining_trigger():
+    """
+    Questa funzione controlla se il file di trigger per l'addestramento automatico del modello esiste e se contiene "True".
+    Se il file non esiste, viene creato con il valore "False".
+    """
+    if not trigger_file_path.exists():
+        trigger_file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(trigger_file_path, "w") as f:
+            f.write("False")
+        return False
+    else:
+        with open(trigger_file_path, "r") as f:
+            content = f.read().strip()
+            if content == "True":
+                return True
+            else:
+                return False
+
+
+def check_confidence_score(threshold=0.2):
+    """
+    Questa funzione controlla se le predizioni del modello hanno un punteggio di confidenza
+    inferiore a una soglia specificata. Se il punteggio di confidenza è inferiore alla soglia,
+    viene restituito True, altrimenti False.
+    """
+
+    global low_confidence_predictions, predictions_total
+    if predictions_total < 20:
+        return False
+
+    low_confidence_rate = low_confidence_predictions / predictions_total
+
+    if low_confidence_rate > threshold:
+        print(f"Il modello ha un punteggio di confidenza basso: {low_confidence_rate:.2%}.")
+        return True
+    else:
+        return False
+
+    

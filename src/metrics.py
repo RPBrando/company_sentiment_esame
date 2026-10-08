@@ -18,7 +18,6 @@ def metrics_creator(prediction, target, save = True, sample_size=None, model_nam
         output_dict=True,
         zero_division=0
     )
-    
 
     # Salvo il report su CSV insieme al sample_size usato per il test.
     if save == True:
