@@ -144,7 +144,7 @@ def test_postmodel_metrics(monkeypatch):
         targets = ["positive", "neutral", "negative"]
         return texts, targets
 
-    def fake_prediction(texts, batch_size = 16):
+    def fake_prediction(texts, batch_size = 16, test = False):
         return [
             {"label": "positive", "score": 0.90},
             {"label": "neutral", "score": 0.80},

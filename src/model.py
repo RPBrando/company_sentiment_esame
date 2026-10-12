@@ -391,25 +391,23 @@ def best_model_choicer():
     # portare in cima il modello migliore
 
     try:
-        if stop_bad_retraining >= 3:
-            print("troppi retraining senza una miglioria. Necessario intervento manuale")
+
+        metric_df = csvfiles_manager.read_file_metrics()
+        if metric_df.empty:
+            print("Non sono presenti metriche per scegliere il modello.")
+            return None
         else:
-            metric_df = csvfiles_manager.read_file_metrics()
-            if metric_df.empty:
-                print("Non sono presenti metriche per scegliere il modello.")
-                return None
-            else:
-                metric_df = metric_df.sort_values(
-                    by=["f1", "accuracy"],
-                    ascending=False
-                )
-                best_model_name = metric_df.iloc[0]["model_name"]
+            metric_df = metric_df.sort_values(
+                by=["f1", "accuracy"],
+                ascending=False
+            )
+            best_model_name = metric_df.iloc[0]["model_name"]
 
-                global sentiment_pipeline
-                sentiment_pipeline = change_used_model(best_model_name)
-                print(f"Il modello migliore è: {best_model_name}")
+            global sentiment_pipeline
+            sentiment_pipeline = change_used_model(best_model_name)
+            print(f"Il modello migliore è: {best_model_name}")
 
-                return best_model_name
+            return best_model_name
 
     except FileNotFoundError:
         print("Il file delle metriche non esiste. Non è possibile scegliere il modello migliore.")
@@ -427,16 +425,20 @@ def auto_retraining(current_model_name, dataset_name):
     print(f"Avvio del retraining del modello {current_model_name} con il dataset {dataset_name}.")
 
     try:
-        train_model(dataset_name, new_version_name, model_trained=current_model_name)
-        global best_model_name
-
-        if best_model_name == new_version_name:
-            reset_retraining_trigger()
-            print(f"Retraining completato. Il nuovo modello è stato salvato come {new_version_name}.")
+        if stop_bad_retraining >= 3:
+            print("troppi retraining senza una miglioria. Necessario intervento manuale")
         else:
-            print("retraining automatico concluso ma modello ancora non soddisfacente")
-            # scriviamo true nuovamente se il modello non è ancora performante
-            trigger_retraining_file_generator()
+            train_model(dataset_name, new_version_name, model_trained=current_model_name)
+            global best_model_name
+
+            if best_model_name == new_version_name:
+                reset_retraining_trigger()
+                stop_bad_retraining = 0
+                print(f"Retraining completato. Il nuovo modello è stato salvato come {new_version_name}.")
+            else:
+                print("retraining automatico concluso ma modello ancora non soddisfacente")
+                # scriviamo true nuovamente se il modello non è ancora performante
+                trigger_retraining_file_generator()
 
     except Exception as error:
         trigger_retraining_file_generator()
