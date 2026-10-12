@@ -4,9 +4,6 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - master
   pull_request:
     branches:
       - main
@@ -36,7 +33,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-    # step per l'avvio di pytest
+      - name: Run Ruff lint
+        run: python -m ruff check src test
+
+      - name: Check Ruff formatting
+        run: python -m ruff format --check src test
 
       - name: Run tests
         run: python -m pytest test -q

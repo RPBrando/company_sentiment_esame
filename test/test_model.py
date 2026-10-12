@@ -1,6 +1,6 @@
 from src import model
-from pathlib import Path
 import pytest
+
 
 class FakePipeline:
     def __init__(self):
@@ -20,11 +20,6 @@ def test_model_pipeline(monkeypatch):
 
     assert fake_pipeline.saved_path == model.MODEL_PATH / "Versione1"
 
-def fake_trigger_retraining_file_generator(trigger = True):
-    return trigger
-
-def fake_train_model():
-    pass
 
 def test_auto_retraining_success(monkeypatch, tmp_path):
     trigger_path = tmp_path / "trigger.txt"
@@ -42,6 +37,7 @@ def test_auto_retraining_success(monkeypatch, tmp_path):
     assert trigger_path.read_text() == "False"
     assert model.stop_bad_retraining == 0
 
+
 def test_auto_retraining_not_better(monkeypatch, tmp_path):
     trigger_path = tmp_path / "trigger.txt"
 
@@ -57,6 +53,7 @@ def test_auto_retraining_not_better(monkeypatch, tmp_path):
     assert trigger_path.read_text() == "True"
     assert model.stop_bad_retraining == 1
 
+
 def test_auto_retraining_stopped(monkeypatch, tmp_path):
     trigger_path = tmp_path / "trigger.txt"
 
@@ -69,9 +66,7 @@ def test_auto_retraining_stopped(monkeypatch, tmp_path):
 
     model.auto_retraining("BaseModel", "train.csv")
 
-    assert trigger_path.read_text() == (
-        "stopped, manual intervention required"
-    )
+    assert trigger_path.read_text() == ("stopped, manual intervention required")
 
 
 def test_auto_retraining_error(monkeypatch, tmp_path):
@@ -102,7 +97,7 @@ def test_train_model(monkeypatch, tmp_path):
                 ["testo positivo", "testo negativo"],
                 ["testo neutrale"],
                 [2, 0],
-                [1]
+                [1],
             )
 
     # Sostituisce Dataset.from_dict di Hugging Face.
@@ -128,14 +123,7 @@ def test_train_model(monkeypatch, tmp_path):
         evaluations = 0
         saved_path = None
 
-        def __init__(
-            self,
-            model,
-            train_dataset,
-            eval_dataset,
-            args,
-            compute_metrics
-        ):
+        def __init__(self, model, train_dataset, eval_dataset, args, compute_metrics):
             self.model = "fake-trained-model"
 
         def evaluate(self, metric_key_prefix):
@@ -143,7 +131,7 @@ def test_train_model(monkeypatch, tmp_path):
 
             return {
                 f"{metric_key_prefix}_accuracy": 0.80,
-                f"{metric_key_prefix}_f1": 0.80
+                f"{metric_key_prefix}_f1": 0.80,
             }
 
         def train(self):
@@ -160,7 +148,7 @@ def test_train_model(monkeypatch, tmp_path):
     def fake_texts_tokenizer(texts, model_name):
         return {
             "input_ids": [[1, 2] for _ in texts],
-            "attention_mask": [[1, 1] for _ in texts]
+            "attention_mask": [[1, 1] for _ in texts],
         }
 
     # TrainingArguments deve solamente accettare i parametri.
@@ -171,40 +159,28 @@ def test_train_model(monkeypatch, tmp_path):
     monkeypatch.setattr(model, "MODEL_PATH", tmp_path / "models")
     monkeypatch.setattr(model.newdata_manager, "Dataset", FakeDataset)
     monkeypatch.setattr(model, "HFDataset", FakeHFDataset)
-    monkeypatch.setattr(
-        model,
-        "AutoModelForSequenceClassification",
-        FakeAutoModel
-    )
+    monkeypatch.setattr(model, "AutoModelForSequenceClassification", FakeAutoModel)
     monkeypatch.setattr(model, "TrainingArguments", fake_training_arguments)
     monkeypatch.setattr(model, "Trainer", FakeTrainer)
     monkeypatch.setattr(model, "texts_tokenizer", fake_texts_tokenizer)
     monkeypatch.setattr(model, "tokenizer", FakeTokenizer())
 
     monkeypatch.setattr(
-        model.csvfiles_manager,
-        "metrics_before_after",
-        lambda *args: None
+        model.csvfiles_manager, "metrics_before_after", lambda *args: None
     )
 
-    monkeypatch.setattr(
-        model,
-        "best_model_choicer",
-        lambda: "VersioneTest"
-    )
+    monkeypatch.setattr(model, "best_model_choicer", lambda: "VersioneTest")
 
     trained_model, metrics = model.train_model(
         dataset_name="train.csv",
         new_version_name="VersioneTest",
         model_trained=model.BASEMODEL_NAME,
-        sample_size=100
+        sample_size=100,
     )
 
     assert trained_model == "fake-trained-model"
     assert FakeTrainer.trained is True
     assert FakeTrainer.evaluations == 2
-    assert FakeTrainer.saved_path == (
-        model.MODEL_PATH / "VersioneTest"
-    )
+    assert FakeTrainer.saved_path == (model.MODEL_PATH / "VersioneTest")
     assert "before training" in metrics
     assert "after training" in metrics

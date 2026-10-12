@@ -5,3 +5,5 @@ src/__pycache__/
 data/
 model/
 test_model.ipynb
+smoke_artifacts/
+.ruff_cache/

@@ -10,11 +10,17 @@ from src import newdata_manager
 from src import metrics
 
 
-app = FastAPI() # creazione API
+app = FastAPI()  # creazione API
 
-@app.get("/", response_class=HTMLResponse) # pagina iniziale
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.get("/", response_class=HTMLResponse)  # pagina iniziale
 async def root():
-        return """
+    return """
             <!DOCTYPE html>
             <html lang="it">
             <link rel="shortcut icon" href="#">
@@ -29,51 +35,49 @@ async def root():
             </body>
             </html>
             """
+
+
 # post. Ricezione del predict e scrittura su file
 
-@app.post("/predict") 
+
+@app.post("/predict")
 async def predicton(text: schema.Text, background: BackgroundTasks):
-        testo = text.sentiment
+    testo = text.sentiment
 
-# esecuzione della predizione del testo in input "grezza"
+    # esecuzione della predizione del testo in input "grezza"
 
-        prediction_raw, model_name = model.make_prediction(testo)     
+    prediction_raw, model_name = model.make_prediction(testo)
 
-# validazione del testo di input (** dizionario spacchettato)
+    # validazione del testo di input (** dizionario spacchettato)
 
-        predict = schema.Prediction(**prediction_raw[0]) 
-         
-# creazione del df con la sola stringa della predizione
+    predict = schema.Prediction(**prediction_raw[0])
 
-        csvfiles_manager.prediction_saver(        
-               testo,
-               predict.label,
-               predict.score,
-               model_name=model_name
-        )    
- # questa operazione fa partire in background il controllo del trigger senza 
- # rallentare il risultato
+    # creazione del df con la sola stringa della predizione
 
-        if model.check_retraining_trigger():
-    # scriviamo running nel file di di trigger per non far partire un auto retraining
-    # a un predizione ulteriore
+    csvfiles_manager.prediction_saver(
+        testo, predict.label, predict.score, model_name=model_name
+    )
+    # questa operazione fa partire in background il controllo del trigger senza
+    # rallentare il risultato
 
-            model.trigger_retraining_file_generator("running")
-            background.add_task(
-                    model.auto_retraining,
-                    model_name,
-                    "train.csv"
-              )
-        
-        return predict  
+    if model.check_retraining_trigger():
+        # scriviamo running nel file di di trigger per non far partire un auto retraining
+        # a un predizione ulteriore
 
-# creazione del file di sommario del dataset di prova  
+        model.trigger_retraining_file_generator("running")
+        background.add_task(model.auto_retraining, model_name, "train.csv")
+
+    return predict
+
+
+# creazione del file di sommario del dataset di prova
+
 
 @app.post("/model-metrics")
 async def dataset_prediction(sample_size: int = 50):
 
     # Creo il gestore del dataset: lui sa dove si trova train.csv
-  
+
     data = newdata_manager.Dataset("train.csv", "latin1")
 
     # texts contiene i testi da dare al modello.
@@ -83,7 +87,7 @@ async def dataset_prediction(sample_size: int = 50):
 
     # Il modello puo' ricevere una lista di testi e restituisce una lista di dizionari, uno per ogni testo: {"label": ..., "score": ...}.
 
-    prediction_raw, model_name = model.make_prediction(texts, batch_size=16,test= True)
+    prediction_raw, model_name = model.make_prediction(texts, batch_size=16, test=True)
 
     # Ogni output grezzo viene validato con Pydantic.
     # Alla fine teniamo solo la label predetta, per confrontarla con targets.
@@ -94,35 +98,39 @@ async def dataset_prediction(sample_size: int = 50):
     ]
 
     # Confrontiamo label vere e label predette.
-    # Passiamo anche sample_size, cosi' nello storico metriche resta scritto su quante righe del dataset e' stata fatta quella valutazione.
-    
-    metric_report = metrics.metrics_creator(predictions, targets, sample_size=sample_size)
+    # Passiamo anche sample_size, cosi' nello storico metriche resta scritto su
+    # quante righe del dataset e' stata fatta quella valutazione.
+
+    metric_report = metrics.metrics_creator(
+        predictions, targets, sample_size=sample_size, model_name=model_name
+    )
     return metric_report
-    
+
+
 @app.get("/model-metrics")
 async def showmetrics():
     df = csvfiles_manager.metrics_reader()
-    return df.to_dict(orient="records") # passaggio del df in dizionario json
+    return df.to_dict(orient="records")  # passaggio del df in dizionario json
 
 
-@app.get("/results") # stampa del file nel web
+@app.get("/results")  # stampa del file nel web
 async def showing_prediction():
     df = csvfiles_manager.read_file()
     return df.to_dict(orient="records")
 
+
 # da completare
+
 
 @app.get("/summary")
 async def showing_summary():
 
-       return csvfiles_manager.df_summary()
+    return csvfiles_manager.df_summary()
+
 
 # partenza del file con uvicorn
 
 if __name__ == "__main__":
-        import uvicorn
+    import uvicorn
 
-        uvicorn.run(app, "0.0.0.0", port= 8000)
-
-
-        
+    uvicorn.run(app, "0.0.0.0", port=8000)

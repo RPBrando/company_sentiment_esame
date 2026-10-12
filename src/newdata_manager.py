@@ -4,34 +4,29 @@ import os
 from sklearn.model_selection import train_test_split
 
 
-
 # __file__ rappresenta il path di questo file Python.
 # Partendo da qui costruiamo path stabili, che non dipendono dalla cartella
 # da cui lanciamo il programma nel terminale.
 BASEDIR = Path(__file__).resolve().parent
 PROJECTDIR = BASEDIR.parent
 DATAPATH = PROJECTDIR / "data"
-FOLDER_DFPATH = Path(
-    os.getenv(
-        "HF_DATASET_PATH",
-        str(DATAPATH / "sentiment_datasets")
-    )
-)
+FOLDER_DFPATH = Path(os.getenv("HF_DATASET_PATH", str(DATAPATH / "sentiment_datasets")))
+
 
 class Dataset:
-
     """
     da passare:
         filename = Nome del file inserito in ../data/sentiment_datasets
         encoding = Tipo di caratteri per la codifica del dataset
     """
+
     def __init__(self, filename, encoding="latin1"):
 
         self.df_path = FOLDER_DFPATH / filename
         self.encoding = encoding
         self.text = None
         self.target = None
-    
+
     def return_text_target(self, sample_size=None):
         # Leggiamo il dataset grezzo
 
@@ -41,9 +36,11 @@ class Dataset:
         required_columns = {"text", "sentiment"}
 
         # colonne richieste - colonne presenti = colonne mancanti.
-        missing_columns = required_columns - set(raw_df.columns) # ricerca colonne mancanti
+        missing_columns = required_columns - set(
+            raw_df.columns
+        )  # ricerca colonne mancanti
 
-        if missing_columns:   # controllo colonne mancandi
+        if missing_columns:  # controllo colonne mancandi
             raise ValueError(f"Colonne mancanti nel dataset: {missing_columns}")
 
         # Alcune righe del dataset possono avere valori vuoti/NaN quindi puliamo il dataset prima di passarlo al modello
@@ -63,31 +60,24 @@ class Dataset:
 
         target_list = self.target.to_list()
 
-
         return self.text, target_list
-
 
     # Funzione per l'estrapolazione del testo e del target da un dataset
     # e codifica del target
 
-    def return_training_data(self, sample_size = None):
+    def return_training_data(self, sample_size=None):
         text, _ = self.return_text_target(sample_size)
 
-        label_encoder = {
-        "positive": 2,
-        "neutral": 1,
-        "negative": 0
-        }
+        label_encoder = {"positive": 2, "neutral": 1, "negative": 0}
 
         target_encoded = self.target.map(label_encoder).to_list()
         text_train, text_test, target_train, target_test = train_test_split(
             text,
-            target_encoded, 
-            test_size= .2, 
-            random_state= 0, 
-            shuffle= True,
-            stratify=target_encoded
-            )
+            target_encoded,
+            test_size=0.2,
+            random_state=0,
+            shuffle=True,
+            stratify=target_encoded,
+        )
 
         return text_train, text_test, target_train, target_test
-
