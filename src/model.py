@@ -422,11 +422,14 @@ def auto_retraining(current_model_name, dataset_name):
     e deve essere addestrato nuovamente con nuovi dati. 
     """
     new_version_name = f"{current_model_name}_retrained"
+    global stop_bad_retraining
+
     print(f"Avvio del retraining del modello {current_model_name} con il dataset {dataset_name}.")
 
     try:
         if stop_bad_retraining >= 3:
             print("troppi retraining senza una miglioria. Necessario intervento manuale")
+            trigger_retraining_file_generator("stopped, manual intervention required")
         else:
             train_model(dataset_name, new_version_name, model_trained=current_model_name)
             global best_model_name
@@ -439,13 +442,14 @@ def auto_retraining(current_model_name, dataset_name):
                 print("retraining automatico concluso ma modello ancora non soddisfacente")
                 # scriviamo true nuovamente se il modello non è ancora performante
                 trigger_retraining_file_generator()
+                stop_bad_retraining +=1
 
     except Exception as error:
         trigger_retraining_file_generator()
         print("errore durante il retraining")
         raise # rendiamo visibile l'errore nei log 
 
-def trigger_retraining_file_generator(dataset_file_name, trigger = "True"):
+def trigger_retraining_file_generator(trigger = "True"):
     """
     Questa funzione crea un file di trigger per l'addestramento automatico del modello.
     """
