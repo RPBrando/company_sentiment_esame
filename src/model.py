@@ -26,6 +26,7 @@ loaded_model_name = None
 tokenizer = None
 best_model_name = None
 retrain_model = False
+stop_bad_retraining = 0
 low_confidence_predictions = 0
 predictions_total = 0
 
@@ -120,7 +121,7 @@ def change_used_model(model_name):
 # funzione per fare le predizioni con il modello scelto
  
 
-def make_prediction(text, batch_size=16, base_model= BASEMODEL_NAME):
+def make_prediction(text, batch_size=16, base_model= BASEMODEL_NAME, test = False):
     
     global best_model_name, sentiment_pipeline, loaded_model_name, low_confidence_predictions, predictions_total
 
@@ -148,14 +149,17 @@ def make_prediction(text, batch_size=16, base_model= BASEMODEL_NAME):
     # contiamo le volte che una predizione è stata poco sicura, 
     # cioè con un punteggio inferiore a 0.6.
     
+    if test == False:
+        for prediction in predictions:
+            predictions_total += 1
+            if prediction["score"] < 0.6:
+                global low_confidence_predictions
+                low_confidence_predictions += 1
 
-    for prediction in predictions:
-        predictions_total += 1
-        if prediction["score"] < 0.6:
-            global low_confidence_predictions
-            low_confidence_predictions += 1
-
-    trigger_retraining_file_generator()
+        if check_confidence_score():
+            trigger_retraining_file_generator()
+    elif test == True:
+        pass
 
     return predictions, loaded_model_name
 
@@ -381,28 +385,31 @@ def best_model_choicer():
     il migliore. In caso di parità, si può considerare l'accuracy come metrica secondaria.
     """
 
-    global best_model_name
+    global best_model_name, stop_bad_retraining
 
     # leggo il file delle metriche e lo ordino per F1 score e accuracy per 
     # portare in cima il modello migliore
 
     try:
-        metric_df = csvfiles_manager.read_file_metrics()
-        if metric_df.empty:
-            print("Non sono presenti metriche per scegliere il modello.")
-            return None
+        if stop_bad_retraining >= 3:
+            print("troppi retraining senza una miglioria. Necessario intervento manuale")
         else:
-            metric_df = metric_df.sort_values(
-                by=["f1", "accuracy"],
-                ascending=False
-            )
-            best_model_name = metric_df.iloc[0]["model_name"]
+            metric_df = csvfiles_manager.read_file_metrics()
+            if metric_df.empty:
+                print("Non sono presenti metriche per scegliere il modello.")
+                return None
+            else:
+                metric_df = metric_df.sort_values(
+                    by=["f1", "accuracy"],
+                    ascending=False
+                )
+                best_model_name = metric_df.iloc[0]["model_name"]
 
-            global sentiment_pipeline
-            sentiment_pipeline = change_used_model(best_model_name)
-            print(f"Il modello migliore è: {best_model_name}")
+                global sentiment_pipeline
+                sentiment_pipeline = change_used_model(best_model_name)
+                print(f"Il modello migliore è: {best_model_name}")
 
-            return best_model_name
+                return best_model_name
 
     except FileNotFoundError:
         print("Il file delle metriche non esiste. Non è possibile scegliere il modello migliore.")
@@ -418,28 +425,32 @@ def auto_retraining(current_model_name, dataset_name):
     """
     new_version_name = f"{current_model_name}_retrained"
     print(f"Avvio del retraining del modello {current_model_name} con il dataset {dataset_name}.")
-    train_model(dataset_name, new_version_name, model_trained=current_model_name)
-    best_model = best_model_choicer()
 
-    if best_model == new_version_name:
-        reset_retraining_trigger()
-        global low_confidence_predictions, predictions_total
+    try:
+        train_model(dataset_name, new_version_name, model_trained=current_model_name)
+        global best_model_name
 
-        low_confidence_predictions = 0
-        predictions_total = 0
+        if best_model_name == new_version_name:
+            reset_retraining_trigger()
+            print(f"Retraining completato. Il nuovo modello è stato salvato come {new_version_name}.")
+        else:
+            print("retraining automatico concluso ma modello ancora non soddisfacente")
+            # scriviamo true nuovamente se il modello non è ancora performante
+            trigger_retraining_file_generator()
 
-        print(f"Retraining completato. Il nuovo modello è stato salvato come {new_version_name}.")
-    else:
-        print("retraining automatico concluso ma modello ancora non soddisfacente")
+    except Exception as error:
+        trigger_retraining_file_generator()
+        print("errore durante il retraining")
+        raise # rendiamo visibile l'errore nei log 
 
-def trigger_retraining_file_generator():
+def trigger_retraining_file_generator(dataset_file_name, trigger = "True"):
     """
     Questa funzione crea un file di trigger per l'addestramento automatico del modello.
     """
     trigger_file_path.parent.mkdir(parents=True, exist_ok=True)
-    if check_confidence_score():
-        with open(trigger_file_path, "w") as f:
-            f.write("True")
+
+    with open(trigger_file_path, "w") as f:
+        f.write(trigger)
 
 def reset_retraining_trigger():
     """

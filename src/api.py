@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import HTMLResponse
 
 # Importiamo i moduli passando dal pacchetto src.
@@ -32,7 +32,7 @@ async def root():
 # post. Ricezione del predict e scrittura su file
 
 @app.post("/predict") 
-async def predicton(text: schema.Text):
+async def predicton(text: schema.Text, background: BackgroundTasks):
         testo = text.sentiment
 
 # esecuzione della predizione del testo in input "grezza"
@@ -51,6 +51,19 @@ async def predicton(text: schema.Text):
                predict.score,
                model_name=model_name
         )    
+ # questa operazione fa partire in background il controllo del trigger senza 
+ # rallentare il risultato
+
+        if model.check_retraining_trigger():
+    # scriviamo running nel file di di trigger per non far partire un auto retraining
+    # a un predizione ulteriore
+
+            model.trigger_retraining_file_generator("running")
+            background.add_task(
+                    model.auto_retraining,
+                    model_name,
+                    "train.csv"
+              )
         
         return predict  
 
@@ -70,7 +83,7 @@ async def dataset_prediction(sample_size: int = 50):
 
     # Il modello puo' ricevere una lista di testi e restituisce una lista di dizionari, uno per ogni testo: {"label": ..., "score": ...}.
 
-    prediction_raw, model_name = model.make_prediction(texts, batch_size=16)
+    prediction_raw, model_name = model.make_prediction(texts, batch_size=16,test= True)
 
     # Ogni output grezzo viene validato con Pydantic.
     # Alla fine teniamo solo la label predetta, per confrontarla con targets.
