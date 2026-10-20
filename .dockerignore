@@ -7,3 +7,5 @@ __pycache__/
 docs/
 test/
 test_model.ipynb
+model/
+smoke_artifacts/

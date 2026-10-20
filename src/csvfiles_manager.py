@@ -130,10 +130,12 @@ def prediction_saver(
 
 def df_summary():
     df = read_file()
+    average_score = df["score"].mean()
+
     return {
         "n. interaction": int(df.shape[0]),
         "sentiment count": df["label"].value_counts().to_dict(),
-        "average score": float(df["score"].mean()),
+        "average score": (None if pd.isna(average_score) else float(average_score)),
     }
 
 
@@ -161,7 +163,7 @@ def metrics_reader():
     return read_results
 
 
-def metrics_saver(metric_list, sample_size=None, model_name=None):
+def metrics_saver(metric_list, sample_size=None, model_name=None, dataset_name=None):
     """
     metrics.metric_report(output_dict=True) restituisce un dizionario annidato
     ogni chiave principale e' una classe/metrica, ad esempio "negative","neutral", "positive", "accuracy", "macro avg".
@@ -193,6 +195,8 @@ def metrics_saver(metric_list, sample_size=None, model_name=None):
     # Aggiungo il nome del modello al dataframe
     if model_name is not None:
         metric_df.insert(2, "model_name", model_name)
+
+    metric_df.insert(3 if model_name is not None else 2, "dataset_name", dataset_name)
 
     try:
         # Se esiste gia' uno storico metriche, lo leggo e aggiungo il nuovo report.

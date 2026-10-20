@@ -1,4 +1,4 @@
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Query
 from fastapi.responses import HTMLResponse
 
 # Importiamo i moduli passando dal pacchetto src.
@@ -8,14 +8,27 @@ from src import model
 from src import csvfiles_manager
 from src import newdata_manager
 from src import metrics
+from src.monitoring import HTTPMetricsMiddleware, HTTPMonitoring
 
 
 app = FastAPI()  # creazione API
+
+app.state.http_monitoring = HTTPMonitoring()
+
+app.add_middleware(
+    HTTPMetricsMiddleware,
+    monitoring=app.state.http_monitoring,
+)
 
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/metrics", include_in_schema=False)
+async def prometheus_metrics():
+    return app.state.http_monitoring.metrics_response()
 
 
 @app.get("/", response_class=HTMLResponse)  # pagina iniziale
@@ -42,7 +55,7 @@ async def root():
 
 @app.post("/predict")
 async def predicton(text: schema.Text, background: BackgroundTasks):
-    testo = text.sentiment
+    testo = text.text
 
     # esecuzione della predizione del testo in input "grezza"
 
@@ -74,36 +87,40 @@ async def predicton(text: schema.Text, background: BackgroundTasks):
 
 
 @app.post("/model-metrics")
-async def dataset_prediction(sample_size: int = 50):
+async def dataset_prediction(
+    # creazione di una query official che ci permette di non salvare le metriche
+    # per piccoli test
+    sample_size: int = Query(default=50, ge=1),
+    official: bool = False,
+):
+    # Il test ufficiale è separato dal dataset di training.
+    data = newdata_manager.Dataset("test.csv", encoding="utf-8")
 
-    # Creo il gestore del dataset: lui sa dove si trova train.csv
+    # La modalità ufficiale utilizza tutti i record.
+    # La modalità rapida utilizza il campione richiesto.
+    requested_size = None if official else sample_size
+    texts, targets = data.return_text_target(sample_size=requested_size)
 
-    data = newdata_manager.Dataset("train.csv", "latin1")
-
-    # texts contiene i testi da dare al modello.
-    # targets contiene le label vere del dataset, usate per valutare il modello.
-
-    texts, targets = data.return_text_target(sample_size=sample_size)
-
-    # Il modello puo' ricevere una lista di testi e restituisce una lista di dizionari, uno per ogni testo: {"label": ..., "score": ...}.
-
-    prediction_raw, model_name = model.make_prediction(texts, batch_size=16, test=True)
-
-    # Ogni output grezzo viene validato con Pydantic.
-    # Alla fine teniamo solo la label predetta, per confrontarla con targets.
+    prediction_raw, model_name = model.make_prediction(
+        texts,
+        batch_size=16,
+        test=True,
+    )
 
     predictions = [
         schema.Prediction(**single_prediction).label
         for single_prediction in prediction_raw
     ]
 
-    # Confrontiamo label vere e label predette.
-    # Passiamo anche sample_size, cosi' nello storico metriche resta scritto su
-    # quante righe del dataset e' stata fatta quella valutazione.
-
     metric_report = metrics.metrics_creator(
-        predictions, targets, sample_size=sample_size, model_name=model_name
+        predictions,
+        targets,
+        save=official,
+        sample_size=len(targets),
+        model_name=model_name,
+        dataset_name="test.csv",
     )
+
     return metric_report
 
 

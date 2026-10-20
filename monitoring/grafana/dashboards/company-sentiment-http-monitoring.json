@@ -1,0 +1,270 @@
+{
+  "id": null,
+  "uid": "company-sentiment-http-monitoring",
+  "title": "Company Sentiment — HTTP Monitoring",
+  "schemaVersion": 42,
+  "version": 1,
+  "editable": false,
+  "timezone": "browser",
+  "tags": ["company-sentiment", "http"],
+  "refresh": "15s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Disponibilità scraping API",
+      "description": "1 = scraping riuscito; 0 = scraping fallito; No data = nessun campione disponibile. Non verifica la correttezza delle predizioni.",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "company-sentiment-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "company-sentiment-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "up{job=\"company-sentiment-api\"}",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+            "mappings": [
+            {
+                "type": "value",
+                "options": {
+                "0": {
+                    "text": "DOWN",
+                    "color": "red"
+                },
+                "1": {
+                    "text": "UP",
+                    "color": "green"
+                }
+                }
+            }
+            ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Request rate HTTP — escluso /health",
+      "description": "Richieste al secondo, mediate su 5 minuti. Include tutti gli endpoint tranne /health, tutti i metodi e tutti i codici HTTP. /metrics è escluso dal middleware.",
+      "gridPos": {
+        "h": 6,
+        "w": 16,
+        "x": 8,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "company-sentiment-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "company-sentiment-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(company_sentiment_http_requests_total{job=\"company-sentiment-api\",endpoint!=\"/health\"}[5m]))",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "legendFormat": "HTTP escluso /health"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+        {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Errori HTTP 5xx — escluso /health",
+      "description": "Errori al secondo, mediati su 5 minuti. Zero quando il Counter HTTP è raccolto ma non esiste un tasso 5xx calcolabile. Nessun punto se lo scraping non è UP.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "company-sentiment-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "company-sentiment-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(company_sentiment_http_requests_total{job=\"company-sentiment-api\",endpoint!=\"/health\",status_code=~\"5..\"}[5m])) or (0 * sum(rate(company_sentiment_http_requests_total{job=\"company-sentiment-api\"}[5m])))) and (min(up{job=\"company-sentiment-api\"}) == 1)",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "legendFormat": "HTTP 5xx escluso /health"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+        {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Latenza HTTP p95 — /predict",
+      "description": "p95 stimato su 5 minuti per tutte le richieste alla route /predict, incluse le 422. Non rappresenta esclusivamente inferenze riuscite. Nessun fallback a zero.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "company-sentiment-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "company-sentiment-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(company_sentiment_http_request_duration_seconds_bucket{job=\"company-sentiment-api\",endpoint=\"/predict\"}[5m])))",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "legendFormat": "p95 HTTP /predict"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "auto",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    }
+  ]
+}

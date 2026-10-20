@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 
 class Text(BaseModel):  # creazione del controllo del dato in ingresso
-    sentiment: str
+    text: str
 
 
 class Prediction(
@@ -13,4 +13,4 @@ class Prediction(
 
 
 class ListText(BaseModel):
-    sentiment_list: list[str]
+    text_list: list[str]

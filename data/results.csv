@@ -1,4 +1,1 @@
-time,text,label,score
-27-06-2026 16:47:01,normal company,neutral,0.5922916531562805
-27-06-2026 16:47:19,shit company,negative,0.8657313585281372
-27-06-2026 16:47:34,great company,positive,0.9470243453979492
+time,text,label,score,model_name

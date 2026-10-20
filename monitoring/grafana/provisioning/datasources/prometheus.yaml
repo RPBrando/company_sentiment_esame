@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: Company Sentiment Prometheus
+    type: prometheus
+    uid: company-sentiment-prometheus
+    orgId: 1
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: false
+    editable: false
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s

@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: company-sentiment-dashboards
+    orgId: 1
+    folder: Company Sentiment
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
