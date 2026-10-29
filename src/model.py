@@ -156,7 +156,7 @@ def make_prediction(text, batch_size=16, base_model=BASEMODEL_NAME, test=False):
         if check_confidence_score():
             if check_retraining_trigger() == "False":
                 trigger_retraining_file_generator()
-            
+
     elif test:
         pass
 
