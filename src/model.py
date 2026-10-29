@@ -154,7 +154,9 @@ def make_prediction(text, batch_size=16, base_model=BASEMODEL_NAME, test=False):
                 low_confidence_predictions += 1
 
         if check_confidence_score():
-            trigger_retraining_file_generator()
+            if check_retraining_trigger() == "False":
+                trigger_retraining_file_generator()
+            
     elif test:
         pass
 
@@ -486,9 +488,11 @@ def check_retraining_trigger():
         with open(trigger_file_path, "r") as f:
             content = f.read().strip()
             if content == "True":
-                return True
-            else:
-                return False
+                return content
+            elif content == "False":
+                return content
+            elif content == "Running":
+                return "run"
 
 
 def check_confidence_score(threshold=0.2):

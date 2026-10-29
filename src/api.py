@@ -36,15 +36,49 @@ async def root():
     return """
             <!DOCTYPE html>
             <html lang="it">
-            <link rel="shortcut icon" href="#">
             <head>
                 <meta charset="UTF-8">
-                <title>Progetto profAI</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <link rel="shortcut icon" href="#">
+                <title>Company Sentiment</title>
+                <style>
+                    body {
+                        margin: 0;
+                        padding: 64px 24px;
+                        background: #f8fafc;
+                        color: #1e293b;
+                        font-family: system-ui, sans-serif;
+                        line-height: 1.7;
+                    }
+                    main { max-width: 640px; margin: 0 auto; }
+                    h1 { margin-bottom: 8px; line-height: 1.2; }
+                    .subtitle { margin-top: 0; color: #475569; }
+                    nav { margin-top: 32px; }
+                    nav a { display: block; margin: 12px 0; color: #1d4ed8; }
+                    a:hover { text-decoration-thickness: 2px; }
+                </style>
             </head>
             <body>
-                <div style="text-align: center; margin-top: 100px;">
-                    <h1>Primo progetto reale di FastAPI!</h1>
-                </div>
+                <main>
+                    <h1>Company Sentiment</h1>
+                    <p class="subtitle">Progetto AI Engineering · Sentiment Analysis</p>
+                    <p>
+                        Servizio sviluppato con FastAPI e il modello RoBERTa di
+                        Hugging Face per classificare testi in sentiment positivo,
+                        neutro e negativo.
+                    </p>
+                    <p>
+                        Il progetto integra test automatici, Docker, CI/CD e
+                        strumenti di monitoraggio.
+                    </p>
+                    <nav aria-label="Collegamenti del progetto">
+                        <a href="/docs">Documentazione interattiva — /docs</a>
+                        <a href="/health">Stato API — /health</a>
+                        <a href="https://github.com/RPBrando/company_sentiment_esame">
+                            Repository GitHub
+                        </a>
+                    </nav>
+                </main>
             </body>
             </html>
             """
@@ -73,12 +107,15 @@ async def predicton(text: schema.Text, background: BackgroundTasks):
     # questa operazione fa partire in background il controllo del trigger senza
     # rallentare il risultato
 
-    if model.check_retraining_trigger():
+    if model.check_retraining_trigger() == "True":
         # scriviamo running nel file di di trigger per non far partire un auto retraining
         # a un predizione ulteriore
 
-        model.trigger_retraining_file_generator("running")
+        model.trigger_retraining_file_generator("Running")
         background.add_task(model.auto_retraining, model_name, "train.csv")
+    elif model.check_retraining_trigger() == "run":
+        print("Training già avviato")
+        pass
 
     return predict
 
