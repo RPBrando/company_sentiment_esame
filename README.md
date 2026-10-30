@@ -274,21 +274,3 @@ Il progetto non implementa rilevazione automatica di data drift, prediction drif
 
 La configurazione e la documentazione indicano lo [Space Hugging Face](https://the-rock93-profai-sa.hf.space/), la relativa [Swagger UI](https://the-rock93-profai-sa.hf.space/docs) e una [dashboard Grafana Cloud](https://rpbrando.grafana.net/public-dashboards/0a02fb40a7ba4216b5adaa8f11983783). Disponibilità, storage e configurazione delle istanze remote non sono stati verificati nel controllo locale.
 
-## Notebook di consegna
-
-[company_sentiment_consegna.ipynb](company_sentiment_consegna.ipynb) è una presentazione sintetica del progetto in cinque sezioni: presentazione, repository GitHub, architettura, risultati e conclusioni.
-
-Contiene il collegamento pubblico alla repository, descrive i componenti implementati e riassume baseline documentata, smoke training storico e verifiche locali. Distingue le evidenze disponibili dai risultati non ricalcolati e indica limiti e miglioramenti mirati.
-
-Il notebook contiene soltanto celle Markdown: può essere aperto in Google Colab o Jupyter senza installazioni, download o esecuzione di codice. Le istruzioni operative restano nel README; il notebook storico `test_model.ipynb` conserva la dimostrazione del training.
-
-## Scelte progettuali e limiti
-
-- Un unico servizio rende il percorso di inferenza e retraining semplice da seguire; training e API condividono risorse.
-- I CSV sono leggibili e adatti alla dimostrazione, ma vengono riscritti senza lock e non sono pensati per scritture concorrenti o grandi volumi.
-- Lo split stratificato e F1 macro rendono esplicito il confronto tra le tre classi. Il campione ridotto verifica il flusso, non dimostra generalizzazione.
-- Il retraining riusa un dataset etichettato fisso; non produce ground truth per le nuove richieste.
-- Pesi e dataset non sono identificati automaticamente da revisioni immutabili nell'applicazione. Nomi riutilizzati e confronti eterogenei possono rendere lo storico ambiguo.
-- Le route `async` chiamano elaborazioni sincrone pesanti; `/health` non certifica la prontezza del modello.
-- Non sono presenti autenticazione o controllo degli accessi allo storico dei testi.
-- Restano da completare il training reale in CI e la distribuzione riproducibile dell'holdout. Il notebook e i report devono riportare solo esecuzioni effettivamente effettuate.
