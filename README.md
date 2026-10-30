@@ -4,323 +4,291 @@ sdk: docker
 app_port: 8000
 ---
 
-# Company Sentiment Analysis
+# Company Sentiment
 
-[![CI](https://github.com/RPBrando/company_sentiment/actions/workflows/ci.yml/badge.svg)](https://github.com/RPBrando/company_sentiment/actions/workflows/ci.yml)
+Progetto AI Engineering per classificare testi in sentiment **positivo, neutro e negativo**, conservare le predizioni e applicare pratiche MLOps di test, distribuzione, valutazione e monitoraggio.
 
-Progetto MLOps per analizzare il sentiment di testi provenienti dai social media, conservare lo storico delle predizioni, valutare e riaddestrare il modello e monitorarne l'andamento nel tempo.
+Il servizio usa FastAPI e il modello pre-addestrato [`cardiffnlp/twitter-roberta-base-sentiment-latest`](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest). I testi vengono inviati dal chiamante: non è implementata una raccolta automatica dai social.
 
-Il modello di partenza e [`cardiffnlp/twitter-roberta-base-sentiment-latest`](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest), capace di classificare un testo come `positive`, `neutral` o `negative`.
+[![CI](https://github.com/RPBrando/company_sentiment_esame/actions/workflows/ci.yml/badge.svg)](https://github.com/RPBrando/company_sentiment_esame/actions/workflows/ci.yml)
 
-## Funzionalita
+- [Repository](https://github.com/RPBrando/company_sentiment_esame)
+- [Notebook di consegna](company_sentiment_consegna.ipynb)
+- [Apri il notebook in Google Colab](https://colab.research.google.com/github/RPBrando/company_sentiment_esame/blob/main/company_sentiment_consegna.ipynb)
 
-- predizione del sentiment tramite API FastAPI;
-- salvataggio di testo, label, confidence, timestamp e modello utilizzato;
-- valutazione del modello su un dataset pubblico;
-- calcolo di accuracy, precision, recall e F1-score;
-- salvataggio dello storico delle metriche;
-- gestione di modelli salvati e versionati;
-- preparazione, tokenizzazione e suddivisione training/validation dei dati;
-- implementazione del fine-tuning tramite Hugging Face `Trainer`;
-- confronto automatico delle versioni tramite F1-score e accuracy;
-- attivazione del modello con le metriche migliori;
-- trigger di retraining basato sulle predizioni a bassa confidenza;
-- retraining in background tramite FastAPI;
-- test automatici con Pytest;
-- build automatica dell'immagine Docker;
-- deploy automatico su Hugging Face Spaces;
-- persistenza dei dati tramite Storage Bucket;
-- dashboard di monitoraggio su Grafana Cloud.
+Il collegamento Colab diventa disponibile dopo la pubblicazione del notebook sul branch `main`.
 
-## Architettura
+## Funzionalità e stato effettivo
 
-```text
-src/
-|-- api.py                 Endpoint FastAPI
-|-- model.py               Caricamento, predizione e training del modello
-|-- newdata_manager.py     Preparazione del dataset e split training/validation
-|-- metrics.py             Calcolo delle metriche
-|-- csvfiles_manager.py    Lettura e scrittura degli storici CSV
-`-- schema.py              Modelli Pydantic
+| Componente | Implementazione |
+|---|---|
+| Inferenza | Pipeline Hugging Face, caricamento differito e riuso del modello in memoria |
+| API | Predizione, storico, riepilogo, valutazione, health check e metriche HTTP |
+| Persistenza | CSV per predizioni, valutazioni ufficiali e confronti di training |
+| Fine-tuning | `train_model()` con Hugging Face Trainer; una epoca, valutazione prima/dopo e salvataggio |
+| Selezione | Ordinamento dello storico di training per F1 macro e poi accuracy |
+| Retraining | Trigger sulla bassa confidence e task in background avviato da `/predict` |
+| CI/CD | Ruff, pytest, build Docker e sincronizzazione condizionata verso Hugging Face Spaces |
+| Monitoraggio | Prometheus per HTTP; Grafana con datasource Prometheus e Infinity |
 
-test/                      Test automatici
-test_model.ipynb           Smoke test reale del training
-.github/workflows/ci.yml   Pipeline CI/CD
-Dockerfile                 Immagine dell'applicazione
+**Il workflow attuale non esegue un training reale.** Il training è disponibile nel codice e nel notebook storico `test_model.ipynb`; i test CI del training usano fake. Il requisito della traccia che richiede il training automatico nella CI/CD non è quindi ancora coperto dal workflow presente.
+
+## Struttura e flusso
+
+| File o directory | Responsabilità |
+|---|---|
+| [src/api.py](src/api.py) | Homepage, endpoint FastAPI e avvio del retraining in background |
+| [src/model.py](src/model.py) | Modello/tokenizer, inferenza, training, selezione e trigger |
+| [src/newdata_manager.py](src/newdata_manager.py) | Lettura CSV, pulizia, encoding delle label e split |
+| [src/metrics.py](src/metrics.py) | Report di classificazione con scikit-learn |
+| [src/csvfiles_manager.py](src/csvfiles_manager.py) | Lettura/scrittura degli storici e riepilogo |
+| [src/schema.py](src/schema.py) | Schemi degli input e delle predizioni |
+| [src/monitoring.py](src/monitoring.py) | Counter, Histogram e middleware HTTP |
+| [test/](test/) | Test automatici e smoke test separato dell'inferenza |
+| [monitoring/](monitoring/) | Scraping, datasource, dashboard e alert provisionati |
+| [compose.yaml](compose.yaml) | Stack locale API, Prometheus e Grafana |
+| [company_sentiment_consegna.ipynb](company_sentiment_consegna.ipynb) | Dimostrazione riproducibile attraverso le funzioni del progetto |
+| [test_model.ipynb](test_model.ipynb) | Smoke test storico del training, con output locali conservati |
+
+Una richiesta `POST /predict` passa da `schema.Text` a `make_prediction()`. Il modello produce label e score; `prediction_saver()` registra il risultato. L'API verifica poi il trigger e restituisce la predizione. Il modello base viene scaricato e salvato al primo utilizzo, se non è già disponibile. Le versioni locali vengono caricate con il relativo tokenizer.
+
+## Ambiente e avvio locale
+
+La CI e il Dockerfile usano **Python 3.11**. Le dipendenze dirette sono elencate in [requirements.txt](requirements.txt). Il primo utilizzo reale del modello richiede accesso a Hugging Face e risorse per scaricare e caricare i pesi.
+
+Dalla radice del repository:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m uvicorn src.api:app --host 127.0.0.1 --port 8000
 ```
+
+Homepage: `http://127.0.0.1:8000/`. Documentazione interattiva: `http://127.0.0.1:8000/docs`.
 
 ## API
 
-| Metodo | Endpoint | Descrizione |
+| Metodo | Endpoint | Comportamento |
 |---|---|---|
-| `POST` | `/predict` | Analizza un testo e salva il risultato |
-| `GET` | `/results` | Restituisce lo storico delle predizioni |
-| `GET` | `/summary` | Restituisce il riepilogo dei sentiment |
-| `POST` | `/model-metrics` | Valutazione rapida sul test set o ufficiale con `official=true` |
-| `GET` | `/model-metrics` | Restituisce lo storico delle metriche |
-| `GET` | `/docs` | Documentazione OpenAPI interattiva |
+| GET | `/` | Homepage del progetto |
+| GET | `/health` | Restituisce `{"status": "ok"}`; non controlla pesi o dataset |
+| POST | `/predict` | Classifica un testo, salva il risultato e controlla il trigger |
+| GET | `/results` | Restituisce tutte le predizioni salvate |
+| GET | `/summary` | Conteggio cumulativo delle interazioni e delle classi, confidence media |
+| POST | `/model-metrics` | Valutazione su `test.csv`, rapida oppure ufficiale |
+| GET | `/model-metrics` | Legge lo storico delle valutazioni ufficiali |
+| GET | `/metrics` | Metriche HTTP in formato Prometheus |
+| GET | `/docs` | Swagger UI generata da FastAPI |
 
-Esempio di richiesta:
+Il campo di input è **`text`**:
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/predict" \
-  -H "Content-Type: application/json" \
-  -d '{"sentiment": "This company provides an excellent service"}'
+curl -X POST 'http://127.0.0.1:8000/predict' \
+  -H 'Content-Type: application/json' \
+  -d '{"text": "This company provides an excellent service"}'
 ```
+
+La risposta contiene `label` e `score`. Il nome del modello viene registrato nel CSV. `score` è la confidence del classificatore e non garantisce la correttezza della predizione. I testi vengono troncati a 512 token; lo schema non esclude stringhe vuote o composte da spazi.
+
+`src/client.py` è uno script dimostrativo legacy che invia ancora il campo `sentiment`: usare l'esempio sopra. `src/client_test.py` richiede una valutazione rapida su un massimo di 10.000 righe, senza salvarla nello storico. Entrambi inviano richieste quando eseguiti o importati.
 
 ## Dataset
 
-Il dataset deve essere un file CSV contenente almeno queste colonne:
+La documentazione originaria identifica la fonte come Kaggle *Tweet Sentiment Extraction*. Il CSV di training incluso contiene anche colonne aggiuntive: il codice utilizza esclusivamente `text` e `sentiment`. Il repository non contiene uno script di acquisizione o trasformazione che ricostruisca la provenienza esatta dei file.
 
-| Colonna | Contenuto |
+| File | Impiego | Encoding | Distribuzione nella versione esaminata |
+|---|---|---|---|
+| `data/sentiment_datasets/train.csv` | Training e validation interna | Latin-1 | Tracciato in Git |
+| `data/sentiment_datasets/test.csv` | Holdout della valutazione ufficiale | UTF-8 | Disponibile nel workspace locale, ma escluso da Git |
+
+**Un clone pulito non contiene `test.csv`.** Prima di usare `POST /model-metrics`, collocare l'holdout etichettato nella directory dei dataset. L'endpoint applicativo non gestisce questa assenza e fallisce. Il notebook di consegna presenta i risultati disponibili senza eseguire valutazioni.
+
+Entrambi i file devono avere `text` e `sentiment`, con label `negative`, `neutral`, `positive`. Per riprodurre la baseline storica serve l'esatto holdout, non un CSV omonimo con testi o label diversi.
+
+Controllo in sola lettura dei file locali del 30 ottobre 2026:
+
+| Dataset | Record grezzi | Record con testo/label non vuoti | Negative | Neutral | Positive |
+|---|---:|---:|---:|---:|---:|
+| Training | 27.481 | 27.480 | 7.781 | 11.117 | 8.582 |
+| Holdout | 3.534 | 3.534 | 1.001 | 1.430 | 1.103 |
+
+SHA-256 dei file verificati:
+
+```text
+train.csv  c56362dadb70153967782dccf817dd21bdc4fa004fedbdae9d32a52ac81bda9a
+test.csv   4d1fc2995ce88eb7d435f18563e93361f35956c3e74ed22572b9614eff6d04e6
+```
+
+Non risultano `textID` condivisi o testi esattamente identici tra i due file. Normalizzando spazi e maiuscole, 26 righe del test hanno un equivalente nel training: è un limite di indipendenza del test set. Non è verificata l'assenza di sovrapposizione con il pretraining del modello esterno.
+
+## Fine-tuning e selezione del modello
+
+`train_model(dataset_name, new_version_name, model_trained=BASEMODEL_NAME, sample_size=None)` riutilizza il modello pre-addestrato. La procedura:
+
+1. elimina valori mancanti e testi vuoti;
+2. se richiesto, prende le prime `sample_size` righe valide;
+3. codifica negative → 0, neutral → 1, positive → 2;
+4. divide `train.csv` in training 80% e validation 20%, con stratificazione e `random_state=0`;
+5. tokenizza con padding e troncamento a 512 token;
+6. valuta il modello iniziale, esegue una epoca e rivaluta sulla stessa validation;
+7. salva pesi, tokenizer e confronto delle metriche;
+8. seleziona e carica il modello con F1 macro maggiore, usando accuracy come secondo criterio.
+
+Parametri impostati nel codice: batch training/evaluation 8, learning rate `2e-5`, una epoca, nessun checkpoint intermedio e nessun reporting esterno. Con `sample_size=300` vengono usati **240 testi per il training e 60 per la validation**. I nomi `X_test` e `test_dataset` interni al training indicano questa validation, non il file ufficiale `test.csv`.
+
+`compute_metrics()` calcola accuracy, precision macro, recall macro e F1 macro. Il Trainer restituisce anche loss e statistiche operative. Il confronto è scritto in `modeltrainingcomparison.csv` e la funzione restituisce modello addestrato e valutazioni prima/dopo.
+
+La selezione usa lo storico della validation, non `modelsummary.csv`. Non controlla che confronti storici diversi usino gli stessi dati; non impone una valutazione sull'holdout prima dell'attivazione. Gli esperimenti vanno eseguiti con percorsi dedicati per evitare la contaminazione con storici precedenti.
+
+## Valutazione ufficiale e storici
+
+Con `test.csv` disponibile:
+
+```bash
+# Prime 50 righe valide; nessun salvataggio del report
+curl -X POST 'http://127.0.0.1:8000/model-metrics?sample_size=50'
+
+# Tutte le righe valide; salvataggio nello storico
+curl -X POST 'http://127.0.0.1:8000/model-metrics?official=true'
+```
+
+La modalità ufficiale ignora `sample_size`. Entrambe usano il modello selezionato dall'applicazione e `make_prediction(..., test=True)`: le predizioni di valutazione non alimentano il trigger di retraining. La modalità rapida usa `head`, non un campionamento casuale.
+
+`classification_report(..., zero_division=0)` produce precision, recall, F1 e support per classe, accuracy, macro average e weighted average.
+
+| File | Contenuto |
 |---|---|
-| `text` | Testo da analizzare |
-| `sentiment` | Label reale: positive, neutral o negative |
+| `results.csv` | Timestamp, testo, label, score e nome del modello |
+| `modelsummary.csv` | Report ufficiali con timestamp, modello, dataset e numerosità |
+| `modeltrainingcomparison.csv` | Metriche prima/dopo il training usate dalla selezione |
 
-Prima del training vengono eseguiti:
+Nella riga `accuracy` di `modelsummary.csv`, lo scalare viene replicato nelle colonne numeriche dalla conversione in DataFrame: il relativo `support` non è una numerosità. Usare `sample_size` e i support delle classi. I timestamp applicativi sono locali e privi di timezone.
 
-1. rimozione dei valori mancanti e dei testi vuoti;
-2. conversione delle label in valori numerici;
-3. suddivisione stratificata di `train.csv` in training (80%) e validation (20%), con `random_state=0`;
-4. tokenizzazione con il tokenizer associato al modello.
+### Evidenze dei risultati
 
-## Metriche
+Il notebook storico [test_model.ipynb](test_model.ipynb) conserva gli output di uno smoke training locale: 300 righe complessive, validation di 60 esempi, F1 macro da **0,680098** a **0,871674**. Il kernel registrato è Python 3.13.9. È un'evidenza di esecuzione del flusso, non una stima finale della qualità sull'holdout. Le sue celle di preparazione puntano al repository originale; il notebook di consegna ne riassume i risultati senza eseguire quel codice.
 
-- **Accuracy**: percentuale complessiva di classificazioni corrette.
-- **Precision**: affidabilita delle classificazioni prodotte dal modello.
-- **Recall**: capacita di trovare gli elementi appartenenti a una classe.
-- **F1-score**: media armonica di precision e recall.
+La documentazione precedente riportava una baseline del 20 ottobre 2026, modello `BaseModel` su 3.534 esempi:
 
-Il progetto conserva le metriche nel tempo per confrontare il modello base con le versioni addestrate. Dopo ogni training ordina le versioni per F1-score e, in caso di parita, per accuracy; la versione migliore viene caricata per le predizioni successive.
+| Metrica | Valore storico riportato |
+|---|---:|
+| Accuracy | 0,709960 |
+| Macro F1 | 0,709542 |
+| Weighted F1 | 0,699702 |
+| F1 negative | 0,741149 |
+| F1 neutral | 0,613053 |
+| F1 positive | 0,774424 |
+| Recall neutral | 0,509091 |
+
+Quel report era descritto come salvato nel volume Docker. **Il `modelsummary.csv` tracciato è vuoto:** questi valori sono riferimenti documentali, non risultati ricalcolati nel controllo finale. Il notebook di consegna li riporta esplicitamente come risultati storici documentati.
 
 ## Retraining automatico
 
-Durante l'uso normale l'applicazione conta le predizioni con confidence inferiore a `0.6`. Dopo almeno 20 predizioni, se oltre il 20% risulta sotto questa soglia, viene attivato un file di trigger persistente.
+Nelle predizioni ordinarie il codice conta gli score strettamente inferiori a `0.6`. Con almeno 20 predizioni e una quota a bassa confidence strettamente superiore al 20%, può attivare il trigger. I contatori sono cumulativi nel processo, non una finestra mobile.
 
-Al termine di una richiesta verso `/predict` con trigger attivo, FastAPI:
+Il file è `PERSISTENT_DATA_PATH/retrain_triggered/trigger.txt`:
 
-1. imposta il trigger su `running` per evitare un secondo avvio immediato;
-2. avvia il retraining in background sul dataset `train.csv`;
-3. confronta la nuova versione con lo storico dei modelli;
-4. disattiva il trigger se la nuova versione diventa la migliore;
-5. riattiva il trigger se il training fallisce o non produce un modello migliore.
+| Contenuto | Gestione |
+|---|---|
+| `False` | Il controllo della confidence può scrivere `True` |
+| `True` | `/predict` scrive `Running` e programma `auto_retraining()` |
+| `Running` | Il lettore restituisce `run`: una richiesta successiva non lo riattiva nel normale percorso sequenziale |
+| `stopped, manual intervention required` | Stato scritto quando il contatore dei training senza miglioramento ha raggiunto tre |
 
-Dopo tre retraining consecutivi senza miglioramento il processo viene fermato e richiede un intervento manuale.
+Il retraining usa `train.csv`, non le predizioni recenti prive di label. Se il candidato diventa il migliore, resetta trigger e contatori; altrimenti riattiva il trigger e incrementa il contatore dei training senza miglioramento. Le eccezioni riattivano il trigger ma non incrementano quel contatore. Il limite viene controllato all'invocazione successiva.
 
-## Avvio locale
+Non c'è uno scheduler periodico: l'avvio dipende dalle richieste a `/predict`. Il file non è un lock atomico tra processi. Se il file manca, il lettore lo crea con `False` ma restituisce inizialmente il booleano `False`, mentre i controlli confrontano stringhe: l'eventuale attivazione viene rinviata a una lettura successiva. I contatori si azzerano al riavvio; i nomi dei candidati possono essere riutilizzati.
 
-Il progetto utilizza Python 3.11.
+## Test e CI/CD
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn src.api:app --reload
-```
-
-L'API sara disponibile su `http://127.0.0.1:8000` e la documentazione automatica su `http://127.0.0.1:8000/docs`.
-
-## Test
+Dalla radice del progetto:
 
 ```bash
+python -m ruff check src test
+python -m ruff format --check src test
 python -m pytest test -q
 ```
 
-I test utilizzano fake e `monkeypatch` per verificare API, training e retraining senza scaricare o addestrare realmente il modello durante la CI.
+I 25 test raccolti normalmente verificano API, lettura/scrittura CSV, report, split e flussi di training/retraining simulati. `monkeypatch` sostituisce le operazioni pesanti; `tmp_path` isola parte delle scritture. Alcuni test usano i percorsi predefiniti: eseguirli con variabili d'ambiente dedicate se sono presenti dati operativi.
 
-### Smoke test del training
+[test/smoke_model.py](test/smoke_model.py) contiene una prova reale dell'inferenza, esclusa dalla raccolta predefinita per il nome del file. Si può richiamare esplicitamente con `python -m pytest test/smoke_model.py -q`; può scaricare e salvare il modello.
 
-Il notebook [`test_model.ipynb`](test_model.ipynb) completa la verifica con un training reale su 300 righe. Usa cartelle isolate in `smoke_artifacts`, controlla il salvataggio di modello e tokenizer e verifica la registrazione delle metriche. Il numero di righe puo essere aumentato dopo la prima esecuzione riuscita.
+Il [workflow](.github/workflows/ci.yml) esegue `test` → `docker-build` → `deploy`. Ruff e pytest precedono la build; il deploy parte solo su push a `main`. Le pull request verso `main`/`master` e gli altri push eseguono i controlli previsti senza deploy. Il training reale e il notebook non sono eseguiti dalla CI.
 
-Nell'ultima esecuzione locale lo smoke test ha usato 240 righe per il training e 60 per il test. L'F1 macro sul campione di test e passato da `0.680` a `0.872`. Il risultato dimostra il funzionamento del flusso, ma non sostituisce una valutazione finale su un campione piu ampio.
+La build controlla il Dockerfile; l'immagine resta sul runner. Il deploy usa `huggingface/hub-sync@v0.3.0` verso `The-rock93/profai_SA` e richiede il secret `HF_TOKEN`. Sincronizza il repository, non promuove automaticamente i modelli addestrati in un esperimento locale.
 
-## Docker
+Controllo locale del 30 ottobre 2026, codice al commit `293c2b43a4445dcd01d3c44e41f1185378e21c1e`: **25 test superati**, Ruff lint e formatting superati, Python 3.13.9 e dipendenze corrispondenti a `requirements.txt`. Test eseguiti con directory temporanee e Hugging Face offline. È comparso un avviso di deprecazione dell'integrazione TestClient/httpx. Non sono stati eseguiti training, inferenza reale, build o deploy durante questo controllo; non equivale a una nuova esecuzione GitHub Actions su Python 3.11.
 
-Build dell'immagine:
+## Docker, persistenza e monitoraggio
+
+Per la sola API:
 
 ```bash
 docker build -t company-sentiment .
+docker run --rm -p 127.0.0.1:8000:8000 company-sentiment
 ```
 
-Avvio del container:
+Questo avvio non configura volumi persistenti. Il Dockerfile usa Python 3.11 slim e installa Torch CPU senza fissarne la versione, poi [requirements_docker.txt](requirements_docker.txt). Le altre dipendenze dirette hanno versioni fissate; non è presente un lock completo delle dipendenze transitive.
+
+Per lo stack locale completo, impostare `GRAFANA_ADMIN_PASSWORD` nel terminale, quindi:
 
 ```bash
-docker run --rm -p 8000:8000 company-sentiment
+docker compose up --build -d
 ```
 
-## Persistenza
-
-In locale i file vengono salvati nelle cartelle del progetto. Nel deploy i percorsi possono essere configurati tramite variabili d'ambiente:
-
-| Variabile | Utilizzo |
+| Servizio | URL locale |
 |---|---|
-| `PERSISTENT_DATA_PATH` | Storico delle predizioni e delle metriche |
-| `HF_DATASET_PATH` | Dataset utilizzati per valutazione e training |
-| `HF_MODEL_PATH` | Modelli salvati e versionati |
+| API | `http://127.0.0.1:8000` |
+| Grafana | `http://127.0.0.1:3000` — utente `admin`, password configurata |
+| Prometheus | `http://127.0.0.1:9090` |
 
-Su Hugging Face Spaces queste variabili puntano allo Storage Bucket montato, evitando la perdita dei dati dopo un riavvio del container.
+Compose monta volumi separati per dati API, modelli, Grafana e Prometheus. La directory dei dataset è un bind mount in sola lettura. I CSV nel volume API non aggiornano automaticamente quelli nel checkout. `docker compose down` arresta lo stack; l'opzione `-v` eliminerebbe anche i volumi.
 
-## CI/CD
-
-La pipeline GitHub Actions esegue in sequenza:
-
-1. installazione delle dipendenze e test Pytest;
-2. build dell'immagine Docker;
-3. deploy su Hugging Face Spaces, soltanto dopo un push sul branch principale e se i passaggi precedenti terminano correttamente.
-
-Applicazione online: [Hugging Face Space](https://the-rock93-profai-sa.hf.space/)
-
-Documentazione API online: [Swagger UI](https://the-rock93-profai-sa.hf.space/docs)
-
-## Monitoraggio
-
-Grafana Cloud legge i dati esposti dall'API tramite il datasource Infinity. La dashboard mostra lo storico delle metriche del modello e la distribuzione del sentiment rilevato. Il repository comprende inoltre il provisioning dello stack locale Prometheus/Grafana in [compose.yaml](compose.yaml) e nella cartella [monitoring](monitoring/).
-
-[Apri la dashboard pubblica](https://rpbrando.grafana.net/public-dashboards/0a02fb40a7ba4216b5adaa8f11983783)
-
-### Monitoraggio tecnico e monitoraggio ML
-
-I due livelli hanno sorgenti e finalità distinte:
-
-| Livello | Sorgente | Indicatori |
+| Variabile | Default locale | Uso |
 |---|---|---|
-| Tecnico | Metriche HTTP FastAPI esposte da `/metrics` e raccolte da Prometheus | Disponibilità dello scraping, request rate, tasso di errori 5xx e latenza HTTP p95 di `/predict` |
-| ML | CSV persistenti esposti come JSON da `/results`, `/summary` e `GET /model-metrics` | Interazioni, distribuzione delle classi predette, metriche di valutazione e confidence |
+| `PERSISTENT_DATA_PATH` | `data/` | Storici e file di trigger |
+| `HF_MODEL_PATH` | `model/` | Modelli e output del Trainer |
+| `HF_DATASET_PATH` | `data/sentiment_datasets/` | Dataset di input |
+| `HF_HOME` | Default della libreria Hugging Face | Cache; Compose la colloca nel volume dei modelli |
 
-Il [middleware HTTP](src/monitoring.py) misura la durata fino all'invio del corpo della risposta, non soltanto il tempo di inferenza. La [configurazione Prometheus](monitoring/prometheus/prometheus.yml) prevede scraping ogni 15 secondi e timeout di 5 secondi. La [dashboard tecnica](monitoring/grafana/dashboards/company-sentiment-http-monitoring.json) contiene quattro pannelli: request rate e tasso di errori 5xx sono calcolati su finestre di 5 minuti ed escludono `/health`; `/metrics` è escluso dalla strumentazione. Il pannello 5xx rappresenta errori al secondo, non un conteggio assoluto.
+Le variabili vanno impostate **prima dell'import** dei moduli. Su un servizio remoto la persistenza richiede uno storage effettivamente montato: le sole variabili non creano uno Storage Bucket.
 
-L'alert provisionato [FastAPI scraping unavailable](monitoring/grafana/provisioning/alerting/api-scraping.yaml) valuta `up{job="company-sentiment-api"} < 1` ogni 30 secondi, con pending period di 1 minuto. I casi senza dati e di errore di esecuzione hanno rispettivamente stato `NoData` ed `Error`. La verifica manuale riportata per il progetto ha osservato le transizioni Pending, Firing e Normal mediante simulazione della condizione negativa: non equivale alla prova di un guasto reale dello scraping. Il repository documenta la regola, ma non contiene evidenze eseguibili di questa simulazione né provisioning di contact point o notifiche esterne; il recapito effettivo dipende dalla configurazione dell'istanza Grafana e non è verificabile dai soli file.
+### Monitoraggio HTTP
 
-La [dashboard ML Infinity](monitoring/grafana/dashboards/company-sentiment-monitor.json) contiene 15 pannelli: due per interazioni e distribuzione dei sentiment, una tabella delle metriche, uno storico F1 per classe, uno storico accuracy, sei pannelli precision/recall, uno per sample size e tre per confidence. Macro F1 e weighted F1 sono disponibili nelle righe della tabella, senza pannelli dedicati. Il range predefinito è `now-30d` → `now`, con refresh ogni `2h`. Il riepilogo `/summary` resta cumulativo: selezionare 30 giorni nella dashboard non trasforma la distribuzione dei sentiment in una statistica limitata a quei giorni. I pannelli non separano automaticamente le valutazioni per modello o dataset: la comparabilità va verificata prima di interpretare gli andamenti.
+Il middleware espone un Counter di richieste per endpoint/metodo/status e un Histogram delle durate. Esclude `/metrics`; misura fino all'invio del corpo della risposta, senza attendere il completamento del training in background. La durata comprende più del solo tempo d'inferenza.
 
-Le metriche ML restano nei CSV e non vengono duplicate in Prometheus. La configurazione locale è verificabile nel repository; lo stato della dashboard Cloud e le impostazioni dell'istanza in esecuzione richiedono una verifica distinta.
+Prometheus raccoglie `/metrics` ogni 15 secondi, con timeout di 5 secondi e retention locale di sette giorni. La dashboard HTTP mostra disponibilità dello scraping, richieste al secondo, errori 5xx al secondo e latenza p95 di `/predict`. I tassi su cinque minuti escludono `/health`; la p95 include anche richieste non riuscite alla route.
 
-### Protocollo di valutazione e tracciabilità
+L'alert `FastAPI scraping unavailable` controlla `up < 1` ogni 30 secondi, con pending period di un minuto. Gli stati senza dati e di errore sono `NoData` ed `Error`. Non sono provisionati contact point o notifiche esterne.
 
-Il protocollo utilizza il dataset pubblico Kaggle *Tweet Sentiment Extraction*, con i file locali in [data/sentiment_datasets](data/sentiment_datasets/):
+### Monitoraggio del modello e del sentiment
 
-| Dataset | Utilizzo | Codifica nel loader |
-|---|---|---|
-| `train.csv` | Training e validation interna stratificata 80/20 | Latin-1 |
-| `test.csv` | Holdout ufficiale: 3.534 testi etichettati `negative`, `neutral`, `positive` | UTF-8 |
+Infinity legge `/results`, `/summary` e `GET /model-metrics`. I 15 pannelli mostrano interazioni, distribuzione delle classi, tabella delle metriche, F1 per classe, accuracy, precision/recall, sample size e confidence. Il refresh è di due ore; il range iniziale è di 30 giorni. Il refresh legge i report già salvati e non avvia una valutazione.
 
-Lo split interno di `train.csv` è chiamato `test` in alcune variabili del codice, ma è utilizzato come `eval_dataset` dal Trainer e non coincide con l'holdout ufficiale. Il flusso di retraining attivato da `/predict` passa `train.csv`. La funzione generica di training accetta un nome di dataset: l'esclusione di `test.csv` dal training è quindi anche un vincolo operativo da rispettare, non un divieto imposto dal loader.
+`/summary` è cumulativo; i pannelli non separano automaticamente modelli o dataset. Il confronto interno `modeltrainingcomparison.csv` non è esposto da un endpoint dedicato. Le metriche ML non sono esportate in Prometheus. I formati timestamp dichiarati in diversi pannelli usano `/`, mentre il CSV usa `-`: il rendering effettivo va controllato nell'istanza Grafana.
 
-L'[endpoint di valutazione](src/api.py) distingue:
+Il progetto non implementa rilevazione automatica di data drift, prediction drift o concept drift, né alert su F1/recall. Confidence e classi predette sono segnali osservabili; non dimostrano da soli degrado o drift. Ripetere la valutazione sul medesimo holdout non misura concept drift.
 
-| Modalità | Selezione dopo la pulizia | Persistenza delle metriche |
-|---|---|---|
-| Rapida | Prime 50 righe valide per default; `sample_size` configurabile | `save=False` |
-| Ufficiale: `POST /model-metrics?official=true` | Tutte le righe valide di `test.csv`; `sample_size` ignorato | `save=True` |
+### Riferimenti remoti
 
-Il [loader](src/newdata_manager.py) elimina valori mancanti di testo/label e testi vuoti. Il file verificato contiene 3.534 record validi; il codice registra il numero effettivamente valutato, senza imporre quel numero con un controllo automatico. La selezione rapida usa `head`, quindi è riproducibile a file e ordine invariati, ma non è un campione casuale o stratificato e non produce una baseline ufficiale.
+La configurazione e la documentazione indicano lo [Space Hugging Face](https://the-rock93-profai-sa.hf.space/), la relativa [Swagger UI](https://the-rock93-profai-sa.hf.space/docs) e una [dashboard Grafana Cloud](https://rpbrando.grafana.net/public-dashboards/0a02fb40a7ba4216b5adaa8f11983783). Disponibilità, storage e configurazione delle istanze remote non sono stati verificati nel controllo locale.
 
-Entrambe le modalità chiamano `make_prediction(..., batch_size=16, test=True)` in [src/model.py](src/model.py), usando il modello selezionato dall'applicazione, con troncamento a 512 token. Non impongono permanentemente `BaseModel`. `test=True` esclude queste predizioni dai contatori di bassa confidence e dalla generazione del relativo trigger. `save=False` impedisce il salvataggio delle metriche, ma non garantisce l'assenza di altri effetti del caricamento/selezione del modello, come il salvataggio iniziale del modello base.
+## Notebook di consegna
 
-[src/metrics.py](src/metrics.py) calcola `classification_report` con `zero_division=0`. [src/csvfiles_manager.py](src/csvfiles_manager.py) salva in `modelsummary.csv` timestamp `time`, `model_name` restituito dall'inferenza, `dataset_name`, `sample_size` effettiva e le colonne `metric_class`, `precision`, `recall`, `f1_score`, `support`. Il report contiene accuracy, metriche per classe, macro average e weighted average. Nella riga `accuracy` il valore scalare viene replicato nelle colonne numeriche dalla conversione in DataFrame: il suo campo `support` non è una numerosità; utilizzare `sample_size` e i support delle singole classi. Il timestamp è locale, senza indicazione del fuso orario.
+[company_sentiment_consegna.ipynb](company_sentiment_consegna.ipynb) è una presentazione sintetica del progetto in cinque sezioni: presentazione, repository GitHub, architettura, risultati e conclusioni.
 
-Il nome del modello e quello del dataset consentono una tracciabilità minima, ma non identificano immutabilmente file sovrascritti. Per confronti omogenei mantenere invariati test set, etichette, pulizia, impostazioni d'inferenza e definizioni delle metriche, conservando versioni distinte dei modelli. Le righe legacy prive di metadati non permettono di ricostruire automaticamente tale provenienza.
+Contiene il collegamento pubblico alla repository, descrive i componenti implementati e riassume baseline documentata, smoke training storico e verifiche locali. Distingue le evidenze disponibili dai risultati non ricalcolati e indica limiti e miglioramenti mirati.
 
-SHA-256 documentale di `test.csv`, ricalcolato in sola lettura durante la verifica della documentazione:
+Il notebook contiene soltanto celle Markdown: può essere aperto in Google Colab o Jupyter senza installazioni, download o esecuzione di codice. Le istruzioni operative restano nel README; il notebook storico `test_model.ipynb` conserva la dimostrazione del training.
 
-```text
-4d1fc2995ce88eb7d435f18563e93361f35956c3e74ed22572b9614eff6d04e6
-```
+## Scelte progettuali e limiti
 
-Non è presente un controllo automatico del checksum ad ogni valutazione. Il test set deve rimanere immutato. Il confronto locale con `train.csv` non rileva `textID` condivisi né testi esattamente identici; normalizzando spazi e maiuscole con `split`/`join` e `casefold`, 26 righe del test hanno equivalenti nel training (circa 0,74%). Si documenta questo limite senza alterare lo split ufficiale. L'indipendenza rispetto a eventuali dati di pretraining del modello esterno non è dimostrabile dai file locali.
-
-### Baseline ufficiale e riferimento storico
-
-La valutazione ufficiale del **20 ottobre 2026**, riportata nella verifica manuale del progetto e visualizzata in Grafana, utilizza `BaseModel` (`cardiffnlp/twitter-roberta-base-sentiment-latest`) su tutti i 3.534 record:
-
-| Metrica | Risultato riportato |
-|---|---:|
-| Accuracy | 0.709960 |
-| Macro F1 | 0.709542 |
-| Weighted F1 | 0.699702 |
-| F1 negative | 0.741149 |
-| F1 neutral | 0.613053 |
-| F1 positive | 0.774424 |
-| Recall neutral | 0.509091 |
-
-La baseline ufficiale è stata ottenuta tramite `POST /model-metrics?official=true` sull'API eseguita in Docker Compose, con risposta HTTP 200. Il report è stato verificato direttamente nel file `/app/data/modelsummary.csv` del container: 3.534 esempi, modello `BaseModel`, dataset `test.csv` e sei righe di metriche.
-
-Il file `data/modelsummary.csv` nel workspace locale è separato dal volume persistente Docker e non viene aggiornato automaticamente dalle richieste al container.
-
-Il recall della classe neutral, pari a circa il 50,9%, motiva il monitoraggio specifico delle sue prestazioni.
-
-### Data drift: segnali disponibili e metodo proposto
-
-Il data drift è un cambiamento nella distribuzione degli input rispetto a un riferimento. Lunghezza dei testi, lingua, vocabolario, argomenti, hashtag e abbreviazioni sono caratteristiche da osservare. Le variazioni delle classi predette sono invece segnali di *prediction drift*: da sole, come le variazioni della confidence, non dimostrano un cambiamento degli input o un peggioramento dell'accuratezza.
-
-Oggi sono disponibili testi, timestamp, classi predette e score in `results.csv`, con distribuzione cumulativa e grafici di confidence in dashboard. Non sono implementate statistiche degli input per finestre temporali né rilevazione automatica del drift.
-
-Come evoluzione minima si propone di confrontare finestre omogenee di produzione con un riferimento, iniziando dalla lunghezza dei testi. Un possibile metodo è il Population Stability Index (PSI), con intervalli di discretizzazione fissati sul riferimento e una gestione esplicita delle frequenze nulle.
-
-| PSI | Criterio operativo proposto |
-|---|---|
-| < 0,10 | Nessun allarme secondo questa euristica; non prova l'assenza di drift |
-| Da 0,10 a 0,20 inclusi | Warning e analisi del cambiamento |
-| > 0,20 | Investigazione approfondita |
-
-Le soglie non sono validate statisticamente sul progetto. Numerosità, variabilità naturale, scelta degli intervalli e cambiamenti di modello possono influenzare l'interpretazione. Il PSI sulla lunghezza non rileva necessariamente cambiamenti semantici; nessun calcolo PSI è attualmente automatizzato.
-
-### Concept drift: verifica con dati etichettati
-
-Il concept drift è un cambiamento nella relazione tra testo e sentiment corretto, ad esempio per espressioni che cambiano significato nel tempo o nel contesto. Le predizioni di produzione non contengono ground truth e non bastano a dimostrarlo.
-
-La procedura proposta, non automatizzata, è:
-
-1. raccogliere un campione rappresentativo di testi recenti;
-2. ottenere etichette affidabili, preferibilmente umane, con criteri coerenti;
-3. valutare il modello attivo e confrontare precision, recall e F1 con un riferimento etichettato metodologicamente compatibile;
-4. analizzare errori e cambiamenti degli input, distinguendoli da modifiche delle regole di annotazione.
-
-Un calo delle prestazioni segnala una possibile model degradation, ma non identifica automaticamente il concept drift come causa. Bias del campione, errori di annotazione e scarsa numerosità per classe limitano le conclusioni.
-
-### Model degradation e criteri di intervento proposti
-
-La model degradation è una riduzione delle prestazioni rispetto a un riferimento appropriato. Si propongono due indicatori principali: **macro F1**, che assegna uguale peso alle tre classi, e **recall neutral**, per evidenziare peggioramenti specifici che una media può nascondere. Accuracy, weighted F1, metriche delle singole classi e support restano disponibili per l'analisi.
-
-| Indicatore | Warning: calo assoluto | Critico: calo assoluto | Warning sul test fisso | Critico sul test fisso |
-|---|---:|---:|---:|---:|
-| Macro F1 | ≥ 0,03 | ≥ 0,05 | ≤ 0,679542 | ≤ 0,659542 |
-| Recall neutral | ≥ 0,05 | ≥ 0,10 | ≤ 0,459091 | ≤ 0,409091 |
-
-Le soglie numeriche derivano dai valori arrotondati della baseline del 20 ottobre: sono criteri operativi iniziali di investigazione, non soglie statisticamente validate né alert implementati. La condizione critica ha precedenza sul warning. Sono applicabili a confronti sul medesimo holdout e con la stessa procedura; per nuovi campioni di produzione occorre un riferimento appropriato, considerando composizione per classe e incertezza statistica. Una futura validazione potrebbe stimare la variabilità delle differenze, ad esempio con bootstrap appaiato sul test fisso.
-
-In caso di superamento delle soglie o anomalie, la risposta proposta è verificare integrità dei dati e protocollo, identificare modello/dataset/numerosità, analizzare gli errori per classe e i cambiamenti degli input, quindi raccogliere etichette recenti quando necessario. Soltanto dopo questa analisi si valuta l'opportunità del retraining e si confronta il candidato con il modello corrente su dati omogenei. Un allarme non giustifica da solo il rilascio di un nuovo modello.
-
-### Collegamento con il retraining e limiti attuali
-
-Il [retraining automatico](#retraining-automatico) già implementato usa una regola diversa dalle soglie ML proposte: score strettamente inferiore a `0.6`, almeno 20 predizioni e quota a bassa confidence strettamente superiore al 20%. I contatori sono cumulativi nel processo e ripartono al riavvio; non rappresentano una finestra temporale mobile. La confidence è un segnale euristico, senza una procedura di calibrazione presente nel codice, e non dimostra drift o accuratezza insufficiente.
-
-La selezione automatica attuale ordina F1 e accuracy in `modeltrainingcomparison.csv`, prodotto dalle valutazioni interne al training. Non utilizza la baseline ufficiale di `modelsummary.csv` e non verifica automaticamente l'omogeneità dei dataset delle valutazioni storiche. La verifica controllata del candidato sull'holdout è dunque una procedura operativa proposta, non un blocco già imposto al rilascio automatico.
-
-Restano da realizzare statistiche degli input su finestre temporali, raccolta periodica di ground truth recente e verifiche statistiche del degrado. Non sono configurati alert ML automatici per data drift, concept drift, F1 o recall. Il file locale delle predizioni non contiene attualmente uno storico popolato sufficiente per calibrare soglie; la quantità di dati nei volumi di esecuzione va verificata separatamente.
-
-L'orchestrazione periodica tramite Airflow, con eventuali retry, è una fase successiva e non è implementata nel flusso documentato. Le priorità future sono raccogliere evidenze etichettate, confrontare modelli su dati omogenei e valutare i segnali temporali già disponibili, senza introdurre una piattaforma MLOps aggiuntiva. L'obiettivo è un protocollo comprensibile, riproducibile e mantenibile, adeguato alla traccia d'esame.
-
-## Stato del progetto
-
-Sono implementati il servizio di predizione, la valutazione, il fine-tuning, il confronto e la selezione dei modelli, il retraining automatico, i test, la containerizzazione, il deploy, la persistenza e il monitoraggio.
-
-Prima della consegna restano attivita di verifica e presentazione:
-
-- scegliere la dimensione finale del campione di training in base alle risorse disponibili;
-- eseguire in Google Colab il notebook di consegna e completarlo con spiegazione, risultati e link al repository.
-
-## Limiti attuali
-
-- Il retraining usa il dataset etichettato `train.csv`: l'applicazione non assegna automaticamente label corrette ai nuovi testi ricevuti dall'API.
-- Il conteggio delle predizioni poco sicure e il numero dei tentativi falliti sono mantenuti in memoria e ripartono al riavvio del processo.
-- Il training in background condivide CPU e memoria con l'API nello stesso container.
-- La confidence del classificatore viene usata come segnale operativo, ma non dimostra da sola che una predizione sia corretta o errata.
-
-## Scelte progettuali
-
-- Il modello base viene recuperato da Hugging Face e salvato localmente al primo utilizzo.
-- Ogni predizione registra il nome del modello che l'ha prodotta.
-- I dati persistenti sono separati dall'immagine Docker.
-- Un nuovo modello viene valutato e confrontato prima di sostituire quello attivo.
-- Training e validation derivano da uno split di `train.csv`; l'holdout ufficiale è `test.csv`, con i limiti di indipendenza documentati nella sezione monitoraggio.
+- Un unico servizio rende il percorso di inferenza e retraining semplice da seguire; training e API condividono risorse.
+- I CSV sono leggibili e adatti alla dimostrazione, ma vengono riscritti senza lock e non sono pensati per scritture concorrenti o grandi volumi.
+- Lo split stratificato e F1 macro rendono esplicito il confronto tra le tre classi. Il campione ridotto verifica il flusso, non dimostra generalizzazione.
+- Il retraining riusa un dataset etichettato fisso; non produce ground truth per le nuove richieste.
+- Pesi e dataset non sono identificati automaticamente da revisioni immutabili nell'applicazione. Nomi riutilizzati e confronti eterogenei possono rendere lo storico ambiguo.
+- Le route `async` chiamano elaborazioni sincrone pesanti; `/health` non certifica la prontezza del modello.
+- Non sono presenti autenticazione o controllo degli accessi allo storico dei testi.
+- Restano da completare il training reale in CI e la distribuzione riproducibile dell'holdout. Il notebook e i report devono riportare solo esecuzioni effettivamente effettuate.
