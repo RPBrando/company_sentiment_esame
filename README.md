@@ -269,8 +269,3 @@ Infinity legge `/results`, `/summary` e `GET /model-metrics`. I 15 pannelli most
 `/summary` è cumulativo; i pannelli non separano automaticamente modelli o dataset. Il confronto interno `modeltrainingcomparison.csv` non è esposto da un endpoint dedicato. Le metriche ML non sono esportate in Prometheus. I formati timestamp dichiarati in diversi pannelli usano `/`, mentre il CSV usa `-`: il rendering effettivo va controllato nell'istanza Grafana.
 
 Il progetto non implementa rilevazione automatica di data drift, prediction drift o concept drift, né alert su F1/recall. Confidence e classi predette sono segnali osservabili; non dimostrano da soli degrado o drift. Ripetere la valutazione sul medesimo holdout non misura concept drift.
-
-### Riferimenti remoti
-
-La configurazione e la documentazione indicano lo [Space Hugging Face](https://the-rock93-profai-sa.hf.space/), la relativa [Swagger UI](https://the-rock93-profai-sa.hf.space/docs) e una [dashboard Grafana Cloud](https://rpbrando.grafana.net/public-dashboards/0a02fb40a7ba4216b5adaa8f11983783). Disponibilità, storage e configurazione delle istanze remote non sono stati verificati nel controllo locale.
-
